@@ -55,6 +55,9 @@ def play_music(cs):
         voice.say("I'm going to play some {} music for you.".format(music.music[choice]))
         vlc_player.play(random.choice(music.music[choice])
 
+def stop_music(cs):
+    vlc_player.stop()
+
 
 phrase_dict = {
     ('hello'): hello,
@@ -71,4 +74,5 @@ phrase_dict = {
     ('weather'):  current_weather,
 
     ('play', 'music'): play_music,
+    ('stop', 'music'): stop_music,
 }
