@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
 
-from os import environ, path, system
+from os import environ, path
 
 import threading
 import pyaudio
-from pocketsphinx.pocketsphinx import *
-from sphinxbase.sphinxbase import *
+from pocketsphinx.pocketsphinx import Decoder
+#from sphinxbase.sphinxbase import *
 
 
 class ContinousSpeech(object):
-    ''' A class which transcribes what it hears '''
+    ''' A class which continuously performs speech-to-text '''
     def __init__(self, model_dir, data_dir, hmm, lm, dictionary, logfn='/dev/null', input_source_index=1, wait_to_resume=False):
         self.model_dir = model_dir
         self.data_dir = data_dir
@@ -54,6 +54,8 @@ class ContinousSpeech(object):
         in_speech_bf = False
         decoder.start_utt()
 
+        self.wait_to_resume_lock.acquire()
+
         while self.is_running:
             buf = stream.read(1024, exception_on_overflow=False)
             if buf:
@@ -69,9 +71,12 @@ class ContinousSpeech(object):
                         if phrase != "":
                             self.all_speech_data.append(phrase)
 
+                            if self.wait_to_resume:
+                                #print("waiting")
+                                self.wait_to_resume_lock.acquire()
+                                #print("resuming")
+
                         if self.wait_to_resume:
-                            print("waiting")
-                            self.wait_to_resume_lock.acquire()
                             stream.start_stream()
                         decoder.start_utt()
             else:
@@ -105,6 +110,8 @@ class ContinousSpeech(object):
 
 if __name__ == "__main__":
     import argparse
+    import tts
+
     parser = argparse.ArgumentParser(description='Listen for audio input.')
     parser.add_argument('--model-dir', type=str, default="/home/newsboy/simple_response_network/pocketsphinx/model")
     parser.add_argument('--data-dir', type=str, default="/home/newsboy/simple_response_network/sphinx-base/test/data")
@@ -128,11 +135,12 @@ if __name__ == "__main__":
                          input_source_index=args.input_source_index,
                          wait_to_resume=True)
 
+    voice = tts.ESpeak()
     while True:
         if cs.new_data_available():
             phrase = cs.get_latest_speech_data()
             print(phrase)
-            system("espeak -v mb-en1 -s 110 -p 1 \"{}\"".format(phrase))
+            voice.say(phrase)
             cs.resume()
 
     cs.stop()
