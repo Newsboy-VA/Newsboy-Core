@@ -11,7 +11,7 @@ from sphinxbase.sphinxbase import *
 
 class ContinousSpeech(object):
     ''' A class which transcribes what it hears '''
-    def __init__(self, model_dir, data_dir, hmm, lm, dictionary, logfn='/dev/null', input_source_index=1):
+    def __init__(self, model_dir, data_dir, hmm, lm, dictionary, logfn='/dev/null', input_source_index=1, wait_to_resume=False):
         self.model_dir = model_dir
         self.data_dir = data_dir
         self.hmm = hmm
@@ -19,13 +19,16 @@ class ContinousSpeech(object):
         self.dictionary = dictionary
         self.logfn = logfn
         self.input_source_index = input_source_index
+        self.wait_to_resume = wait_to_resume
 
         self.all_speech_data = []
 
+        self.is_running = True
+        self.wait_to_resume_lock = threading.Lock()
         self.cst = threading.Thread(target=self.start_listening, name="ContinuousSpeechThread")
         self.cst.start()
 
-    def start_listening(self, wait_to_resume=False):
+    def start_listening(self):
         ''' Starts streaming. Pauses until self.resume has been called '''
 
         config = Decoder.default_config()
@@ -51,7 +54,7 @@ class ContinousSpeech(object):
         in_speech_bf = False
         decoder.start_utt()
 
-        while True:
+        while self.is_running:
             buf = stream.read(1024, exception_on_overflow=False)
             if buf:
                 decoder.process_raw(buf, False, False)
@@ -59,21 +62,25 @@ class ContinousSpeech(object):
                     in_speech_bf = decoder.get_in_speech()
                     if not in_speech_bf:
                         decoder.end_utt()
-                        if wait_to_resume:
+                        if self.wait_to_resume:
                             stream.stop_stream()
-                        phrase = decoder.hyp().hypstr
-                        print("\"{}\"".format(phrase))
 
+                        phrase = decoder.hyp().hypstr
                         if phrase != "":
                             self.all_speech_data.append(phrase)
-        #                system("espeak -v mb-en1 -s 110 -p 1 \"{}\"".format(phrase))
-                        if wait_to_resume:
-                            #input()
+
+                        if self.wait_to_resume:
+                            print("waiting")
+                            self.wait_to_resume_lock.acquire()
                             stream.start_stream()
                         decoder.start_utt()
             else:
                 break
         decoder.end_utt()
+
+    def new_data_available(self):
+        ''' Returns whether there is data available '''
+        return self.all_speech_data != []
 
     def get_all_speech_data(self):
         ''' Retrieves all the recorded speech '''
@@ -87,6 +94,12 @@ class ContinousSpeech(object):
 
     def resume(self):
         ''' Resume getting speech data. Only used if wait_to_resume==True '''
+        self.wait_to_resume_lock.release()
+
+    def stop(self):
+        ''' Stop streaming. Note that this cannot be undone '''
+        self.is_running = False
+        self.cst.join()
 
 
 
@@ -99,10 +112,12 @@ if __name__ == "__main__":
     parser.add_argument('-lm', type=str, default="en-us/en-us.lm.bin")
     parser.add_argument('-dictionary', type=str, default="en-us/cmudict-en-us-short.dict")
     parser.add_argument('-logfn', type=str, default="/dev/null")
-    #parser.add_argument('-ack', default=False, action='store_true')
     parser.add_argument('--input-source-index', type=int, default=1)
+    #parser.add_argument('--wait-to-resume', default=False, action="store_true")
+    #parser.add_argument('--repeat', default=False, action="store_true")
 
     args = parser.parse_args()
+
 
     cs = ContinousSpeech(model_dir=args.model_dir,
                          data_dir=args.data_dir,
@@ -110,6 +125,14 @@ if __name__ == "__main__":
                          lm=args.lm,
                          dictionary=args.dictionary,
                          logfn=args.logfn,
-                         input_source_index=args.input_source_index)
+                         input_source_index=args.input_source_index,
+                         wait_to_resume=True)
 
-    cs.start()
+    while True:
+        if cs.new_data_available():
+            phrase = cs.get_latest_speech_data()
+            print(phrase)
+            system("espeak -v mb-en1 -s 110 -p 1 \"{}\"".format(phrase))
+            cs.resume()
+
+    cs.stop()
