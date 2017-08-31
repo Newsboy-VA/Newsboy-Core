@@ -1,9 +1,14 @@
 #!/usr/bin/python3
-
 import sys, getopt
 import vlc
 import pafy
 import time
+from random import randint
+#
+# phrase_dict = {
+#     ('play', 'music'): play_music,
+#     ('stop', 'music'): stop_music,
+# }
 
 
 music = {   'jazz'          : "https://www.youtube.com/watch?v=neV3EPgvZ3g",
@@ -22,14 +27,18 @@ class VLC_player(object):
 
 
 
-    def play(self, media=None):
+    def play(self, media=None, randomPos=True):
         if media is not None:                    # <----------------- please check this
             self.add_media(media)
-        # if not self.player.is_playing() == 0:
+
+        if randomPos is True:
+            pos = randint(0, 9)
+            print(pos)
+            self.player.set_position(pos)
         self.player.play()
 
     def stop(self):
-        if self.player.is_playing() == 0:
+        if self.player.is_playing() == 1:
             self.player.stop()
 
 
@@ -52,6 +61,9 @@ class VLC_player(object):
         # #Create a new MediaListPlayer instance and associate the player and playlist with it
         # list_player.set_media_player(player)
         # list_player.set_media_list(media_list)
+
+    def set_volume(self, volume):
+        self.player.audio_set_volume(volume)
 
 def main(argv):
     vlc_player = VLC_player();
