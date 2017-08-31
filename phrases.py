@@ -3,6 +3,7 @@ from time import strftime
 from num2words import num2words
 import random
 import music
+import feedparser
 
 
 voice = tts.ESpeak()
@@ -39,7 +40,9 @@ def current_day(cs):
     voice.say(strftime("It is %A"))
 
 def current_weather(cs):
-    voice.say("")
+    weather_data = feedparser.parse("http://www.rssweather.com/wx/nz/christchurch/rss.php")
+    weather_summary = weather_data['entries'][0]['summary_detail']['value']
+    voice.say(weather_summary)
 
 def play_music(cs):
     voice.say("What kind of music?")
@@ -51,13 +54,14 @@ def play_music(cs):
     if speech_data in music.music.keys():
         vlc_player.play(music.music[speech_data])
     elif speech_data in ['anything', 'any']:
-        choice = random.choice(music.music.keys())
-        voice.say("I'm going to play some {} music for you.".format(music.music[choice]))
-        vlc_player.play(random.choice(music.music[choice])
+        choice = random.choice(list(music.music.keys()))
+        voice.say("I'm going to play some {} music for you.".format(choice))
+        vlc_player.play(music.music[choice])
 
 
 phrase_dict = {
     ('hello'): hello,
+    ('hi'): hello,
     ('morning'): morning,
     ('how', 'you'): how_are_you,
     ('good-bye'): goodbye,
