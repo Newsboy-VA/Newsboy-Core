@@ -1,10 +1,7 @@
 
 
-class IO(object):
-    """docstring for IO."""
-    def __init__(self, arg):
-        super(IO, self).__init__()
-        self.arg = arg
+class ResponseIO(object):
+    """docstring for ResponseIO."""
 
     def write(self,text):
         raise NotImplementedError

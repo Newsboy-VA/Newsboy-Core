@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-import stt
+
+from response_io import ResponseIO
 
 from os import environ, path
-
 import subprocess
 import threading
 import pyaudio
@@ -140,8 +140,8 @@ class ESpeak(object):
                         ])
 
 
-class Speech(IO):
-    """docstring for Speech."""
+class SpeechIO(ResponseIO):
+    """docstring for SpeechIO."""
 
 
     def __init__(self, model_dir="/home/newsboy/simple_response_network/pocketsphinx/model",
@@ -164,11 +164,11 @@ class Speech(IO):
         self.tts = ESpeak()
 
 
-    def write(self):
-        self.tts.say(question_str)
+    def write(self, text):
+        self.tts.say(text)
 
     def read(self, blocking=True):
-        while not self.stt.data_available():              # <------- Maybe have time out and also only accept expected response
+        while not self.stt.data_available():
             if blocking is False:
                 return None
 
@@ -201,7 +201,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    speech_io = Speech( model_dir=args.model_dir,
+    speech_io = SpeechIO( model_dir=args.model_dir,
                         data_dir=args.data_dir,
                         hmm=args.hmm,
                         lm=args.lm,
