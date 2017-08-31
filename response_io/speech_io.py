@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-from response_io import ResponseIO
+from response_io.response_io import ResponseIO
 
 from os import environ, path
 import subprocess
