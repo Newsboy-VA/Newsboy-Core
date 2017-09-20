@@ -189,20 +189,20 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description='Listen and repear audio input.')
-    parser.add_argument('--model-dir', type=str, default="/home/newsboy/simple_response_network/pocketsphinx/model")
-    parser.add_argument('--data-dir', type=str, default="/home/newsboy/simple_response_network/sphinx-base/test/data")
-    parser.add_argument('-hmm', type=str, default="en-us/en-us")
-    parser.add_argument('-lm', type=str, default="en-us/en-us.lm.bin")
-    parser.add_argument('-dictionary', type=str, default="en-us/cmudict-en-us-short.dict")
+    parser.add_argument('--model-dir', type=str, default="./models")
+    #parser.add_argument('--data-dir', type=str, default="/home/newsboy/simple_response_network/sphinx-base/test/data")
+    parser.add_argument('-hmm', type=str, default="en-us/cmusphinx-en-us-5.2")
+    parser.add_argument('-lm', type=str, default="en-us/en-70k-0.2-pruned.lm")
+    parser.add_argument('-dictionary', type=str, default="en-us/cmudict-en-us.dict")
     parser.add_argument('-logfn', type=str, default="/dev/null")
-    parser.add_argument('--input-source-index', type=int, default=1)
+    parser.add_argument('--input-source-index', type=int, default=0)
     #parser.add_argument('--wait-to-resume', default=False, action="store_true")
     #parser.add_argument('--repeat', default=False, action="store_true")
 
     args = parser.parse_args()
 
     speech_io = SpeechIO( model_dir=args.model_dir,
-                        data_dir=args.data_dir,
+                        #data_dir=args.data_dir,
                         hmm=args.hmm,
                         lm=args.lm,
                         dictionary=args.dictionary,

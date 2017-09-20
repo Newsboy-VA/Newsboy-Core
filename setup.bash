@@ -28,6 +28,8 @@ gunzip en-70k-0.2-pruned.lm.gz
 
 wget "https://raw.githubusercontent.com/cmusphinx/cmudict/master/cmudict.dict"  -O cmudict-en-us.dict
 
+cd ../../
+
 # Text-to-speech
 sudo apt-get install espeak
 sudo apt-get install mbrola-en1  # or your choice. Not required
