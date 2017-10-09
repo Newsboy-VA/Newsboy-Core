@@ -13,6 +13,7 @@ sudo -H pip3 install --upgrade pip
 # Speech-to-text (speech recognition)
 sudo -H pip3 install pocketsphinx
 sudo -H pip3 install pyaudio
+sudo -H pip3 install SpeechRecognition
 
 mkdir ./models ./models/en-us
 cd ./models/en-us

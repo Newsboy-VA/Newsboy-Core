@@ -27,9 +27,6 @@ class Question(object):
         if question_str is not None:
             self.io.write(question_str)
 
-
-
-
         # LISTEN
         # ----------------------------------------------------------------------
         user_response = self.io.read()

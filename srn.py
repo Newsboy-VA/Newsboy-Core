@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from response_io.text_io import TextIO
-from response_io.speech_io import SpeechIO
+from user_io.text_io import TextIO
+from user_io.speech_io import SpeechIO
 from question import Question
 
 from time import strftime
@@ -19,17 +19,17 @@ vlc_player = music.VLC_player()
 
 
 
-def hello(response_io):
-    response_io.write("Hello.")
+def hello(user_io):
+    user_io.write("Hello.")
 
-def morning(response_io):
-    response_io.write("Good morning.")
+def morning(user_io):
+    user_io.write("Good morning.")
 
-def how_are_you(response_io):
-    response_io.write("I don\'t have feelings.")
+def how_are_you(user_io):
+    user_io.write("I don\'t have feelings.")
 
-def goodbye(response_io):
-    response_io.write(random.choice([
+def goodbye(user_io):
+    user_io.write(random.choice([
         "Farewell.",
         "Goodbye.",
         "See you later.",
@@ -37,35 +37,35 @@ def goodbye(response_io):
         "I hope you come back soon.",
     ]))
 
-def thanks(response_io):
-    response_io.write("You're welcome.")
+def thanks(user_io):
+    user_io.write("You're welcome.")
 
-def current_time(response_io):
-    response_io.write(strftime("It is %I:%M %P"))
+def current_time(user_io):
+    user_io.write(strftime("It is %I:%M %P"))
 
-# def current_date(response_io):
-#     response_io.write("It is the {} of {}".format(num2words(int(strftime("%d")), ordinal=True), strftime("%B")))
+# def current_date(user_io):
+#     user_io.write("It is the {} of {}".format(num2words(int(strftime("%d")), ordinal=True), strftime("%B")))
 
-def current_day(response_io):
-    response_io.write(strftime("It is %A"))
+def current_day(user_io):
+    user_io.write(strftime("It is %A"))
 
-def current_weather(response_io):
+def current_weather(user_io):
     weather_data = feedparser.parse("http://www.rssweather.com/wx/nz/christchurch/rss.php")
     weather_summary = weather_data['entries'][0]['summary_detail']['value']
-    response_io.write(weather_summary)
+    user_io.write(weather_summary)
 
-def play_music(response_io):
-    data = Question(io=response_io).ask("What kind of music?")
+def play_music(user_io):
+    data = Question(io=user_io).ask("What kind of music?")
 
 
     if data in music.music.keys():
         vlc_player.play(music.music[data])
     elif data in ['anything', 'any']:
         choice = random.choice(list(music.music.keys()))
-        response_io.write("I'm going to play some {} music for you.".format(choice))
+        user_io.write("I'm going to play some {} music for you.".format(choice))
         vlc_player.play(music.music[choice])
 
-def stop_music(response_io):
+def stop_music(user_io):
     vlc_player.stop()
 
 
@@ -107,9 +107,9 @@ def main():
 
     import argparse
 
-    parser = argparse.ArgumentParser(description='Listen and repear audio input.')
+    parser = argparse.ArgumentParser(description='Listen and repeat audio input.')
     parser.add_argument('--model-dir', type=str, default="./models")
-    #parser.add_argument('--data-dir', type=str, default="/home/newsboy/simple_response_network/sphinx-base/test/data")
+    #parser.add_argument('--data-dir', type=str, default="/home/newsboy/simple_user_network/sphinx-base/test/data")
     parser.add_argument('-hmm', type=str, default="en-us/cmusphinx-en-us-5.2")
     parser.add_argument('-lm', type=str, default="en-us/en-70k-0.2-pruned.lm")
     parser.add_argument('-dictionary', type=str, default="en-us/cmudict-en-us.dict")

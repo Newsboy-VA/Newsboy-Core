@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-from response_io.response_io import ResponseIO
+from user_io import UserIO
 
 from os import environ, path
 import subprocess
@@ -9,16 +9,44 @@ import threading
 import pyaudio
 from pocketsphinx.pocketsphinx import Decoder
 #from sphinxbase.sphinxbase import *
+import speech_recognition
 
 
+
+class SpeechRecognition(object):
+    ''' A class which performs speech-to-text using sphinx or google '''
+    def __init__(self, local=True):
+        self.recognizer = speech_recognition.Recognizer()
+        # self.recognizer.dynamic_energy_threshold = True
+        if local:
+            self.decode = self.recognizer.recognize_sphinx
+        else:
+            self.decode = self.recognizer.recognize_google
+
+    def listen(self, keyword_entries=None):
+        ''' Send request to the speech recognition server '''
+        with speech_recognition.Microphone() as source:
+            self.recognizer.adjust_for_ambient_noise(source)
+            #print("Say something!")
+            audio = self.recognizer.listen(source)
+
+        try:
+            return self.decode(audio, keyword_entries=keyword_entries)
+            # return self.decode(audio, keyword_entries=keywords, show_all=True)
+
+        except speech_recognition.UnknownValueError:
+            print("Unable to understand audio")
+        except speech_recognition.RequestError as e:
+            print("Could not request results from Google Speech Recognition service; {0}".format(e))
+        return ""
 
 
 
 class ContinousSpeech(object):
     ''' A class which continuously performs speech-to-text '''
-    def __init__(self, model_dir, data_dir, hmm, lm, dictionary, logfn='/dev/null', input_source_index=1, wait_to_resume=False):
+    def __init__(self, model_dir, hmm, lm, dictionary, logfn='/dev/null', input_source_index=1, wait_to_resume=False):
         self.model_dir = model_dir
-        self.data_dir = data_dir
+        #self.data_dir = data_dir
         self.hmm = hmm
         self.lm = lm
         self.dictionary = dictionary
@@ -49,9 +77,11 @@ class ContinousSpeech(object):
 
         p = pyaudio.PyAudio()
         stream = p.open(format=pyaudio.paInt16,
-                        channels=1,
+                        channels=2,
+                        # rate=44100
                         rate=16000,
                         input=True,
+                        output=False,
                         input_device_index=self.input_source_index,
                         frames_per_buffer=1024)
         stream.start_stream()
@@ -140,26 +170,28 @@ class ESpeak(object):
                         ])
 
 
-class SpeechIO(ResponseIO):
+class SpeechIO(UserIO):
     """docstring for SpeechIO."""
 
 
-    def __init__(self, model_dir="/home/newsboy/simple_response_network/pocketsphinx/model",
-                       data_dir="/home/newsboy/simple_response_network/sphinx-base/test/data",
+    def __init__(self, model_dir="./models",
+                       #data_dir="/home/newsboy/simple_response_network/sphinx-base/test/data",
                        hmm="en-us/en-us",
                        lm="en-us/en-us.lm.bin",
-                       dictionary="en-us/cmudict-en-us-short.dict",
-                       input_source_index=1):
+                       dictionary="en-us/cmudict-en-us.dict",
+                       input_source_index=0):
         super(self.__class__, self).__init__()
 
         # Input
-        self.stt = ContinousSpeech( model_dir=model_dir,
-                                    data_dir=data_dir,
-                                    hmm=hmm,
-                                    lm=lm,
-                                    dictionary=dictionary,
-                                    input_source_index=input_source_index,
-                                    wait_to_resume=True)
+        #self.stt = ContinousSpeech( model_dir=model_dir,
+        #                            #data_dir=data_dir,
+        #                            hmm=hmm,
+        #                            lm=lm,
+        #                            dictionary=dictionary,
+        #                            input_source_index=input_source_index,
+        #                            wait_to_resume=True)
+
+        self.stt = SpeechRecognition(local=True)
         # Output
         self.tts = ESpeak()
 
@@ -168,21 +200,21 @@ class SpeechIO(ResponseIO):
         self.tts.say(text)
 
     def read(self, blocking=True):
-        while not self.stt.data_available():
-            if blocking is False:
-                return None
+        #while not self.stt.data_available():
+        #    if blocking is False:
+        #        return None
 
-        user_response = self.stt.get_latest_speech_data()
-
+        #user_response = self.stt.get_latest_speech_data()
+        user_response = self.stt.listen()
 
         return user_response
 
     def resume_reading(self):
-        self.stt.resume()
+        pass#self.stt.resume()
 
     def stop_reading(self):
         ''' Stop reading. Note that this cannot be undone '''
-        self.stt.stop()
+        #self.stt.stop()
 
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 
-from response_io.response_io import ResponseIO
+from user_io import UserIO
 
 
-class TextIO(ResponseIO):
+class TextIO(UserIO):
     """docstring for TextIO."""
 
 
