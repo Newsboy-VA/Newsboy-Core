@@ -1,8 +1,0 @@
-#!/bin/bash
-
-
-# Music module
-sudo pip3 install python_vlc
-sudo pip3 install youtube_dl
-sudo pip3 install pafy
-
