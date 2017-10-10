@@ -1,0 +1,19 @@
+{
+  "entities": [
+    {
+      "name": "time",
+      "parameters": [
+        "now",
+        "today",
+        "tomorrow",
+        "yesterday"
+      ]
+    },
+      {
+        "name": "state",
+        "parameters": [
+          "feeling"
+        ]
+      }
+  ]
+}

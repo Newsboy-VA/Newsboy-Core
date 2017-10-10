@@ -1,0 +1,40 @@
+{
+  "intents": [
+    {
+      "name": "greeting",
+      "synonyms": [
+        "hello",
+        "hi"
+      ],
+      "function": "greeting",
+      "arguments": []
+    },
+    {
+      "name": "farewell",
+      "synonyms": [
+        "goodbye",
+        "bye"
+      ],
+      "function": "farewell",
+      "arguments": []
+    },
+    {
+      "name": "thanks",
+      "synonyms": [
+        "thank you",
+        "thankyou"
+      ],
+      "function": "compliment",
+      "arguments": []
+    },
+    {
+      "name": "how are you",
+      "synonyms": [],
+      "function": "check_state",
+      "arguments": [
+        "state",
+        "time"
+      ]
+    }
+  ]
+}
