@@ -12,7 +12,7 @@ def main():
         description='Begin a client to talk to the virtual assistant')
     parser.add_argument('--input-type', type=str, default="")
     parser.add_argument('--host', type=str, default='')
-    parser.add_argument('--port', type=int, default=55801)
+    parser.add_argument('--port', type=int, default=55802)
     parser.add_argument('--continuous', default=False, action="store_true")
 
     args = parser.parse_args()
@@ -42,20 +42,51 @@ class VAClient(object):
         self.socket.connect((self.host, self.port))
         self.socket.settimeout(1)
 
+        self.connection = VAServerConnection(self.socket)
+
     def send(self, string_data):
         ''' Sends data to the assistant '''
-        self.socket.sendall(string_data.encode("utf-8"))
+        self.connection.send(string_data)
+
+    def recv(self):
+        ''' Gets data from the assistant '''
+        return self.connection.recv()
+
+    def close(self):
+        ''' Permanently closes the connection '''
+        self.connection.close()
+
+    def is_connected(self):
+        ''' Checks to see if the assistant is still there '''
+        return self.connection.is_connected()
+
+
+class VAServerConnection(object):
+    def __init__(self, socket):
+        self.socket = socket
+
+    def send(self, string_data):
+        ''' Sends data to the assistant '''
+        self.socket.send(string_data.encode("utf-8"))
 
     def recv(self):
         ''' Gets data from the assistant '''
         try:
             return self.socket.recv(1024).decode("utf-8")
         except socket.timeout:
-            return ""
+            return None
 
     def close(self):
         ''' Permanently closes the connection '''
         self.socket.close()
+
+    def is_connected(self):
+        ''' Checks to see if the assistant is still there '''
+        try:
+            self.send("are you still there?")
+            return True
+        except (ConnectionResetError, BrokenPipeError):
+            return False
 
 
 if __name__ == "__main__":

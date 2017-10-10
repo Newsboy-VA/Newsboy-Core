@@ -1,11 +1,12 @@
 
 
 import socket
+import threading
 
 
 class VAServer(object):
     ''' A server object which talks to all clients '''
-    def __init__(self, host='', port=55801):
+    def __init__(self, host='', port=55802):
         self.host = host
         self.port = port
 
@@ -28,11 +29,9 @@ class VAServer(object):
 
         # Check which connections are still there
         bad_addresses = []
-        for client in self.client_dict.values():
-            try:
-                client.send("are you still there?")
-            except (ConnectionResetError, BrokenPipeError):
-                bad_addresses.append(client.client_id)
+        for client_id, client in self.client_dict.items():
+            if not client.is_connected():
+                bad_addresses.append(client_id)
 
         # Remove addresses which have disconnected
         for client_id in bad_addresses:
@@ -40,11 +39,13 @@ class VAServer(object):
 
     def add_client(self, client_id, conn):
         ''' Adds a client '''
-        self.client_dict[client_id] = VAClientHandler(client_id, conn)
+        client_connection = VAClientConnection(client_id, conn)
+        self.client_dict[client_id] = VAClientHandler(client_connection)
         print(client_id, "connected")
 
     def remove_client(self, client_id):
         ''' Removes a client '''
+        self.client_dict[client_id].end_conversation_handler()
         self.client_dict.pop(client_id)
         print(client_id, "disconnected")
 
@@ -53,7 +54,7 @@ class VAServer(object):
         self.socket.close()
 
 
-class VAClientHandler(object):
+class VAClientConnection(object):
     def __init__(self, client_id, conn):
         self.client_id = client_id
         self.conn = conn
@@ -67,4 +68,49 @@ class VAClientHandler(object):
         try:
             return self.conn.recv(1024).decode("utf-8")
         except socket.timeout:
-            return ""
+            return None
+
+    def is_connected(self):
+        ''' Checks to see if the client is still there '''
+        try:
+            self.send("are you still there?")
+            return True
+        except (ConnectionResetError, BrokenPipeError):
+            return False
+
+
+class VAClientHandler(object):
+    def __init__(self, connection, continuous=False):
+        self.connection = connection
+        self.continuous = continuous
+
+        self.client_handler_end = False
+        self.client_handler_thread = threading.Thread(
+            target=self.conversation_handler)
+        self.client_handler_thread.start()
+
+    def conversation_handler(self):
+        ''' The thread that continuously talks with the client '''
+        while not self.client_handler_end:
+            # conversation = Conversation(self.client_connection)
+
+            # Wait for module ack
+
+            if not self.continuous:
+                self.client_handler_end = True
+
+    def end_conversation_handler(self):
+        ''' Gracefully ends the conversation thread when it can '''
+        self.client_handler_end = True
+
+    def send(self, string_data):
+        ''' Sends data to the client '''
+        self.connection.send()
+
+    def recv(self):
+        ''' Gets data from the client '''
+        return self.connection.recv()
+
+    def is_connected(self):
+        ''' Checks to see if the client is still there '''
+        return self.connection.is_connected()
