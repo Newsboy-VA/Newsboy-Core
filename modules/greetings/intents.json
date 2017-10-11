@@ -31,10 +31,7 @@
       "name": "how are you",
       "synonyms": [],
       "function": "check_state",
-      "arguments": [
-        "state",
-        "time"
-      ]
+      "arguments": []
     }
   ]
 }

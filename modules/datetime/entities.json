@@ -1,0 +1,54 @@
+{
+  "entities": [
+    {
+      "name": "day",
+      "parameters": [
+        "today",
+        "tomorrow",
+        "yesterday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ]
+    },
+    {
+      "name": "number",
+      "parameters": [
+        "half",
+        "quarter",
+        "three quarters",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "fifteen",
+        "twenty",
+        "thirty",
+        "fourty",
+        "fifty",
+        "sixty"
+      ]
+    },
+    {
+      "name": "time_unit",
+      "parameters": [
+        "second",
+        "seconds",
+        "minute",
+        "minutes",
+        "hour",
+        "hours"
+      ]
+    }
+  ]
+}

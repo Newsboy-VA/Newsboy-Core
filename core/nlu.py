@@ -5,14 +5,14 @@ import json
 import re
 
 
-class NLUBase(object):
+class NLU(object):
     '''  '''
     def __init__(self, module_dir="../modules"):
         self.module_dir = module_dir
         self.intent_list = []
-        self.update_intents()
+        self.update_intent_list()
 
-    def update_intents(self):
+    def update_intent_list(self):
         ''' Iterates through modules and finds the intents '''
         for listing in os.listdir(self.module_dir):
             module = os.path.join(self.module_dir, listing)
@@ -28,8 +28,16 @@ class NLUBase(object):
                 # print(intents_json)
                 for intent_dict in intents_json:
                     intent_ob = Intent(intent_dict, entities_json)
-                    print(intent_ob.regex)
                     self.intent_list.append(intent_ob)
+
+    def find_intent(self, phrase):
+        ''' Returns a list of matching intents '''
+        matching_intents = []
+        for intent in self.intent_list:
+            if intent.intent_match(phrase):
+                matching_intents.append(intent)
+
+        return matching_intents
 
 
 class Intent(object):
@@ -48,34 +56,41 @@ class Intent(object):
 
     def generate_regex(self):
         ''' Generates a pattern which matches on any argument '''
-        pattern = "(?P<intent>{}".format(self.name)
+        pattern = "\\b(?P<intent>{}".format(self.name)
         for syn in self.synonyms:
             pattern += "|{}".format(syn)
-        pattern += ")"
+        pattern += ")\\b"
 
         for arg, parameters in self.arguments.items():
-            pattern += "|(?P<{}>{}".format(arg, parameters[0])
+            pattern += "\\b|\\b(?P<{}>{}".format(arg, parameters[0])
             for param in parameters[1:]:
                 pattern += "|{}".format(param)
-            pattern += ")"
+            pattern += ")\\b"
 
         return re.compile(pattern, re.IGNORECASE)
 
-
     def full_match(self, phrase):
         ''' Returns True if the word_list fills all the arguments '''
-        match_dict = self.regex.match(phrase).groupdict()
+        match = self.regex.search(phrase)
+        if match is None:
+            return False
         return None not in match_dict.values()
 
     def intent_match(self, phrase):
         ''' Returns True if the word_list contains the intent '''
-        match_dict = self.regex.match(phrase).groupdict()
+        match = self.regex.search(phrase)
+        if match is None:
+            return False
+        match_dict = match.groupdict()
         return match_dict['intent'] is not None
 
     def list_missing_arguments(self, phrase):
         ''' Returns a list of missing arguments '''
         missing_arguments = []
-        match_dict = self.regex.match(phrase).groupdict()
+        match = self.regex.search(phrase)
+        if match is None:
+            return self.arguments.keys()
+
         for (arg, parameter) in match_dict.items():
             if not arg == 'intent':
                 if parameter is None:
@@ -83,8 +98,24 @@ class Intent(object):
 
         return missing_arguments
 
+    def __repr__(self):
+        string_representation = "{}(".format(self.callback)
+        for arg in self.arguments.keys():
+            string_representation += "{}, ".format(arg)
+        if len(self.arguments) != 0:
+            string_representation = string_representation[:-2]
+        string_representation += ")"
 
-nlu = NLUBase()
+        return string_representation
+
+
+nlu = NLU()
+print(nlu.find_intent("Hello"))
+print(nlu.find_intent("What's the time"))
+print(nlu.find_intent("How are you today?"))
+print(nlu.find_intent("Can you tell me the time?"))
+print(nlu.find_intent("set timer for ten minutes"))
+print(nlu.find_intent("set timer for ten"))
 
 # def deconstruct(client_response):
 #     response_keywords = []
@@ -148,7 +179,8 @@ nlu = NLUBase()
 # def populate_intent_dict():
 #     for module in modules:
 #         for intent in module.intents:
-#             full_intents_dict[ tuple( intent['name'], *intent['synonyms']) ] =  intent['parameters']
+#             full_intents_dict[ tuple( intent['name'], *intent['synonyms'])] =
+#                 intent['parameters']
 
 
 # class Entity(object):

@@ -1,0 +1,79 @@
+{
+  "intents": [
+    {
+      "name": "time",
+      "synonyms": [],
+      "function": "get_current_time",
+      "arguments": []
+    },
+    {
+      "name": "day",
+      "synonyms": [
+        "today"
+      ],
+      "function": "get_current_day",
+      "arguments": []
+    },
+    {
+      "name": "month",
+      "synonyms": [],
+      "function": "get_current_month",
+      "arguments": []
+    },
+    {
+      "name": "year",
+      "synonyms": [],
+      "function": "get_current_year",
+      "arguments": []
+    },
+    {
+      "name": "date",
+      "synonyms": [],
+      "function": "get_date",
+      "arguments": [
+        "day"
+      ]
+    },
+    {
+      "name": "set timer",
+      "synonyms": [
+        "start timer"
+      ],
+      "function": "set_countdown_timer",
+      "arguments": [
+        "number",
+        "time_unit"
+      ]
+    },
+    {
+      "name": "pause timer",
+      "synonyms": [],
+      "function": "pause_countdown_timer",
+      "arguments": []
+    },
+    {
+      "name": "resume timer",
+      "synonyms": [
+        "continue timer"
+      ],
+      "function": "resume_countdown_timer",
+      "arguments": []
+    },
+    {
+      "name": "stop timer",
+      "synonyms": [
+        "cancel timer"
+      ],
+      "function": "stop_countdown_timer",
+      "arguments": []
+    },
+    {
+      "name": "reset timer",
+      "synonyms": [
+        "repeat timer"
+      ],
+      "function": "reset_countdown_timer",
+      "arguments": []
+    }
+  ]
+}
