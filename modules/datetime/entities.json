@@ -16,39 +16,42 @@
       ]
     },
     {
-      "name": "number",
-      "parameters": [
-        "half",
-        "quarter",
-        "three quarters",
-        "one",
-        "two",
-        "three",
-        "four",
-        "five",
-        "six",
-        "seven",
-        "eight",
-        "nine",
-        "ten",
-        "fifteen",
-        "twenty",
-        "thirty",
-        "fourty",
-        "fifty",
-        "sixty"
-      ]
+      "name": "time_unit",
+      "parameters": {
+        "seconds": [
+          "seconds",
+          "second",
+          "secs",
+          "sec",
+          "s"
+        ],
+        "minutes": [
+          "minutes",
+          "minute",
+          "mins",
+          "min",
+          "m"
+        ],
+        "hours": [
+          "hours",
+          "hour",
+          "hrs",
+          "hr",
+          "h"
+        ]
+      }
     },
     {
-      "name": "time_unit",
-      "parameters": [
-        "second",
-        "seconds",
-        "minute",
-        "minutes",
-        "hour",
-        "hours"
-      ]
+      "name": "timer_type",
+      "parameters": {
+        "countdown": [
+          "countdown",
+          "timer"
+        ],
+        "alarm": [
+          "alarm"
+        ]
+      }
     }
   ]
 }

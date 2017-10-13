@@ -6,7 +6,7 @@ import re
 
 
 class NLU(object):
-    '''  '''
+    ''' A class for performing basic Natural Language Understanding '''
     def __init__(self, module_dir="../modules"):
         self.module_dir = module_dir
         self.intent_list = []
@@ -34,156 +34,140 @@ class NLU(object):
         ''' Returns a list of matching intents '''
         matching_intents = []
         for intent in self.intent_list:
-            if intent.intent_match(phrase):
+            if intent.is_intent_match(phrase):
                 matching_intents.append(intent)
 
         return matching_intents
 
 
 class Intent(object):
-    '''  '''
+    ''' A class to find arguments for a given intent '''
     def __init__(self, intent_json, entities_json):
         self.name = intent_json['name']
-        self.synonyms = intent_json['synonyms']
         self.callback = intent_json['function']
-        self.arguments = dict()
-        for intent_arg in intent_json['arguments']:
-            for entity in entities_json:
-                if entity['name'] == intent_arg:
-                    self.arguments[intent_arg] = entity['parameters']
+        self.intent_regex = self.generate_intent_regex(
+            intent_json['name'], intent_json['synonyms'])
+        self.argument_dict = self.generate_argument_dict(
+            intent_json['arguments'], entities_json)
 
-        self.regex = self.generate_regex()
+    def generate_intent_regex(self, name, synonyms=list()):
+        ''' Generates a regular expression which matches the name '''
 
-    def generate_regex(self):
-        ''' Generates a pattern which matches on any argument '''
-        pattern = "\\b(?P<intent>{}".format(self.name)
-        for syn in self.synonyms:
-            pattern += "|{}".format(syn)
+        pattern = "\\b("
+        for word in [name, *synonyms]:
+            pattern += "{}|".format(word)
+        pattern = pattern[:-1]
         pattern += ")\\b"
-
-        for arg, parameters in self.arguments.items():
-            pattern += "\\b|\\b(?P<{}>{}".format(arg, parameters[0])
-            for param in parameters[1:]:
-                pattern += "|{}".format(param)
-            pattern += ")\\b"
 
         return re.compile(pattern, re.IGNORECASE)
 
-    def full_match(self, phrase):
-        ''' Returns True if the word_list fills all the arguments '''
-        match = self.regex.search(phrase)
-        if match is None:
-            return False
-        return None not in match_dict.values()
+    def generate_argument_dict(self, arguments, entities_json):
+        ''' Generates a dictionary of the form {"argument": regex} '''
 
-    def intent_match(self, phrase):
+        argument_dict = dict()
+
+        for intent_arg in arguments:
+            if intent_arg == 'number':
+                argument_dict[intent_arg] = \
+                    self.generate_number_regex()
+            for entity in entities_json:
+                if entity['name'] == intent_arg:
+                    if isinstance(entity['parameters'], dict):
+                        entity_dict = entity['parameters']
+                    else:
+                        entity_dict = dict()
+                        for parameter in entity['parameters']:
+                            entity_dict[parameter] = [parameter]
+                    argument_dict[intent_arg] = \
+                        self.generate_argument_regex(entity_dict)
+
+        return argument_dict
+
+    def generate_argument_regex(self, entity_dict):
+        ''' Generates a regular expression which matches the argument '''
+        pattern = "\\b("
+
+        for word, synonyms in entity_dict.items():
+            pattern += "(?P<{}>".format(word.replace(" ", "_"))
+            for synonym in synonyms:
+                pattern += "{}|".format(synonym)
+            pattern = pattern[:-1]
+            pattern += ")|"
+        pattern = pattern[:-1]
+        pattern += ")\\b"
+
+        return re.compile(pattern, re.IGNORECASE)
+
+    def generate_number_regex(self):
+        ''' Generates a regular expression which matches a number '''
+        pattern = "\\b(?P<number>\\d+)\\b"
+
+        return re.compile(pattern, re.IGNORECASE)
+
+    def is_intent_match(self, phrase):
         ''' Returns True if the word_list contains the intent '''
-        match = self.regex.search(phrase)
-        if match is None:
-            return False
-        match_dict = match.groupdict()
-        return match_dict['intent'] is not None
+        return self.intent_regex.search(phrase) is not None
 
-    def list_missing_arguments(self, phrase):
+    def is_full_match(self, phrase):
+        ''' Returns True if the word_list fills all the arguments '''
+        if not self.is_intent_match(phrase):
+            return False
+        if None in self.find_all_arguments(phrase).values():
+            return False
+        return True
+
+    def find_argument(self, argument, phrase):
+        ''' Returns the value of the given argument, None if not present '''
+        match = self.argument_dict[argument].search(phrase)
+        if match is not None:
+            match_dict = match.groupdict()
+            if argument == 'number':
+                return match_dict['number']
+
+            else:
+                for word, synonym in match_dict.items():
+                    # NOTE: It may not behave as you want if there are more
+                    # than one synonym in a phrase.
+                    if synonym is not None:
+                        return word
+        return None
+
+    def find_all_arguments(self, phrase):
+        ''' Returns a dictionary of arguments and their values '''
+        all_arguments = dict()
+        for argument in self.argument_dict.keys():
+            all_arguments[argument] = self.find_argument(argument, phrase)
+
+        return all_arguments
+
+    def find_missing_arguments(self, phrase):
         ''' Returns a list of missing arguments '''
         missing_arguments = []
-        match = self.regex.search(phrase)
-        if match is None:
-            return self.arguments.keys()
 
-        for (arg, parameter) in match_dict.items():
-            if not arg == 'intent':
-                if parameter is None:
-                    missing_arguments.append(arg)
+        for argument, value in self.find_all_arguments(phrase).items():
+            if value is None:
+                missing_arguments.append(argument)
 
         return missing_arguments
 
     def __repr__(self):
         string_representation = "{}(".format(self.callback)
-        for arg in self.arguments.keys():
+        for arg in self.argument_dict.keys():
             string_representation += "{}, ".format(arg)
-        if len(self.arguments) != 0:
+        if len(self.argument_dict) != 0:
             string_representation = string_representation[:-2]
         string_representation += ")"
 
         return string_representation
 
 
-nlu = NLU()
-print(nlu.find_intent("Hello"))
-print(nlu.find_intent("What's the time"))
-print(nlu.find_intent("How are you today?"))
-print(nlu.find_intent("Can you tell me the time?"))
-print(nlu.find_intent("set timer for ten minutes"))
-print(nlu.find_intent("set timer for ten"))
-
-# def deconstruct(client_response):
-#     response_keywords = []
-#     for word in client_response:
-#         if word is an_intent:
-#             response_keywords.append(word)
-#         else if word is an entity:
-#             response_keywords.append(word)
-#
-#     return response_keywords
-#
-# def is_intent(word):
-#     if word in
-
-
-# def get_intent(user_response):
-#     phrase_matches = []
-#
-#     for phrase in self.phrase_dict.keys():
-#         is_match = True
-#
-#         if isinstance(phrase, tuple):
-#             for word in phrase:
-#                 if word not in user_response:
-#                     is_match = False
-#         else:
-#             if phrase not in user_response:
-#                 is_match = False
-#
-#         if is_match:
-#             phrase_matches.append(phrase)
-#
-#     if phrase_matches != []:
-#         print(phrase_dict[phrase_matches[-1]])
-#
-#         return phrase_dict[phrase_matches[-1]]
-#
-
-# phrase_dict = {
-#     ('hello'): hello,
-#     ('hi'): hello,
-#     ('morning'): morning,
-#     ('how', 'you'): how_are_you,
-#     ('good-bye'): goodbye,
-#     ('bye'): goodbye,
-#     ('thanks'): thanks,
-#     ('thankyou'): thanks,
-#
-#     ('time'): current_time,
-#     # ('date'): current_date,
-#     ('day'): current_day,
-#     ('weather'):  current_weather,
-#
-#     ('play', 'music'): play_music,
-#     ('stop', 'music'): stop_music,
-# }
-#
-# full_intents_dict = {}
-#
-#
-# def populate_intent_dict():
-#     for module in modules:
-#         for intent in module.intents:
-#             full_intents_dict[ tuple( intent['name'], *intent['synonyms'])] =
-#                 intent['parameters']
-
-
-# class Entity(object):
-#     def __init__(self, entity_json):
-#         self.name = entity_json['name']
-#         self.parameters = entity_json['parameters']
+if __name__ == "__main__":
+    nlu = NLU()
+    # print(nlu.find_intent("Hello"))
+    # print(nlu.find_intent("What's the time"))
+    # print(nlu.find_intent("How are you today?"))
+    # print(nlu.find_intent("Can you tell me the time?"))
+    # print(nlu.find_intent("start a timer for ten minutes"))
+    # print(nlu.find_intent("create timer for ten"))
+    phrase = "set a timer for 10 hrs"
+    print(nlu.find_intent(phrase)[0].find_all_arguments(phrase))

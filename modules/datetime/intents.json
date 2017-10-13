@@ -33,45 +33,56 @@
       ]
     },
     {
-      "name": "set timer",
+      "name": "set",
       "synonyms": [
-        "start timer"
+        "start",
+        "make",
+        "create"
       ],
-      "function": "set_countdown_timer",
+      "function": "set_timer",
       "arguments": [
+        "timer_type",
         "number",
         "time_unit"
       ]
     },
     {
-      "name": "pause timer",
+      "name": "pause",
       "synonyms": [],
-      "function": "pause_countdown_timer",
-      "arguments": []
+      "function": "pause_timer",
+      "arguments": [
+          "timer_type"
+      ]
     },
     {
-      "name": "resume timer",
+      "name": "resume",
       "synonyms": [
-        "continue timer"
+        "continue"
       ],
-      "function": "resume_countdown_timer",
-      "arguments": []
+      "function": "resume_timer",
+      "arguments": [
+        "timer_type"
+      ]
     },
     {
-      "name": "stop timer",
+      "name": "stop",
       "synonyms": [
-        "cancel timer"
+        "cancel"
       ],
-      "function": "stop_countdown_timer",
-      "arguments": []
+      "function": "stop_timer",
+      "arguments": [
+        "timer_type"
+      ]
     },
     {
-      "name": "reset timer",
+      "name": "reset",
       "synonyms": [
-        "repeat timer"
+        "repeat"
       ],
-      "function": "reset_countdown_timer",
-      "arguments": []
+      "function": "reset_timer",
+      "arguments": [
+        "timer_type"
+      ]
     }
   ]
 }
