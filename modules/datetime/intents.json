@@ -8,9 +8,7 @@
     },
     {
       "name": "day",
-      "synonyms": [
-        "today"
-      ],
+      "synonyms": [],
       "function": "get_current_day",
       "arguments": []
     },

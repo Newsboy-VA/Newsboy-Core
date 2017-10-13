@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+try:
+    from .base_io import BaseIO
+except SystemError:
+    from base_io import BaseIO
 
-from user_io import UserIO
 
-
-class TextIO(UserIO):
+class TextIO(BaseIO):
     """docstring for TextIO."""
-
 
     def write(self, text):
         if text is not "":
@@ -16,7 +17,6 @@ class TextIO(UserIO):
         user_response = input()
 
         return user_response
-
 
 
 if __name__ == "__main__":

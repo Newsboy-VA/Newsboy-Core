@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 
-# import argparse
-
 from client_communication import VAServer
 
+import argparse
 
-def main():
-    ''' This is the main function of the virtual assistant '''
-    server = VAServer()
-    while True:
-        server.check_connections()
-    server.close()
+
+class VirtualAssistant(object):
+
+    def __init__(self, port):
+        self.server = VAServer(host='', port=port)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description='Start the Virtual Assistant Core.')
+    parser.add_argument('--port', type=int, default=55801)
+    # parser.add_argument('-logfn', type=str, default="/dev/null")
+    # parser.add_argument('--input-source-index', type=int, default=0)
+
+    args = parser.parse_args()
+
+    VA = VirtualAssistant(args.port)

@@ -1,9 +1,9 @@
 
 
-class UserIO(object):
-    """docstring for UserIO."""
+class BaseIO(object):
+    """docstring for BaseIO."""
 
-    def write(self,text):
+    def write(self, text):
         raise NotImplementedError
 
     def read(self):
