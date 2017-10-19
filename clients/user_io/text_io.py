@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
-import asyncio
 import collections
 import curses
-# import sys
-
 
 try:
     from .base_io import BaseIO
@@ -13,63 +10,34 @@ except SystemError:
 
 
 class TextIO(BaseIO):
-    """docstring for TextIO."""
+    ''' An interface with the user via a terminal '''
     def __init__(self):
+        super().__init__()
         self.stdscr = curses.initscr()
         self.stdscr.nodelay(True)
         curses.echo()
-
         # self.stdscr.clear()
+        self.line = ''
 
-        self.buffer = collections.deque(maxlen=20)
+    def check_for_data(self):
+        ''' Check once for data from the terminal '''
+        self.stdscr.refresh()
 
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.check_for_data())
+        char_code = self.stdscr.getch()
+        if char_code != curses.ERR:
+            char = chr(char_code)
+            if char != '\n':
+                self.line += char
+            else:
+                self.buffer.append(self.line)
+                self.line = ''
+                print(end="\n\r")  # TODO: Make this heppen elsewhere
+
 
     def write(self, message):
         ''' Write data to the terminal '''
         print(message + '\r')
         self.stdscr.refresh()
-
-    @asyncio.coroutine
-    async def check_for_data(self):
-        ''' Continuously check for data from the terminal '''
-
-        loop = asyncio.get_event_loop()
-        line = ''
-        while loop.is_running():
-            await asyncio.sleep(0)
-            self.stdscr.refresh()
-
-            char_code = self.stdscr.getch()
-            if char_code != curses.ERR:
-                char = chr(char_code)
-                if char != '\n':
-                    line += char
-                else:
-                    self.buffer.append(line)
-                    line = ''
-
-                    print(end='\n\r')  # TODO: Make this heppen elsewhere
-
-    def data_available(self):
-        ''' Returns whether the read buffer has data '''
-        return len(self.buffer) != 0
-
-    @asyncio.coroutine
-    async def read(self, blocking=True):
-        ''' Read data from the user via a circular buffer '''
-        loop = asyncio.get_event_loop()
-        empty_buffer = True
-        while empty_buffer and loop.is_running():
-            await asyncio.sleep(0)
-            empty_buffer = not self.data_available()
-            if not blocking:
-                break
-        if empty_buffer:
-            return None
-
-        return self.buffer.popleft()
 
 
 if __name__ == "__main__":

@@ -44,7 +44,8 @@ class VAClient(object):
         while loop.is_running():
             await asyncio.sleep(0)
             message = await self.io_handle.read()
-            self.protocol.write(message)
+            if message is not None:
+                self.protocol.write(message)
 
     @asyncio.coroutine
     async def assistant_to_user(self):
@@ -53,7 +54,8 @@ class VAClient(object):
         while loop.is_running():
             await asyncio.sleep(0)
             message = await self.protocol.read()
-            self.io_handle.write(message)
+            if message is not None:
+                self.io_handle.write(message)
 
 
 class VAClientProtocol(asyncio.Protocol):
@@ -120,5 +122,6 @@ if __name__ == "__main__":
         print(e)
         # pass
     print("hi")
-    curses.echo()
-    curses.endwin()
+    if args.io_method == "text":
+        curses.echo()
+        curses.endwin()

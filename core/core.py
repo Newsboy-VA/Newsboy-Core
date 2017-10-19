@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import asyncio
+import sys
 import argparse
 
 from client_communication import VAServerProtocol
@@ -26,6 +27,9 @@ class VirtualAssistant(object):
         # Close the server
         server.close()
         loop.run_until_complete(server.wait_closed())
+
+        if sys.version_info[1] >= 6:
+            loop.run_until_complete(loop.shutdown_asyncgens())
         loop.close()
 
 
