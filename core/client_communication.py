@@ -7,20 +7,23 @@ import collections
 
 
 class VAServerProtocol(asyncio.Protocol):
+    def __init__(self):
+        self.buffer = collections.deque(maxlen=20)
+        self.conversation_handler_end = False
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.conversation_handler())
+
     def connection_made(self, transport):
         ''' Callback when the client connects '''
         self.sockname = transport.get_extra_info('sockname')
         self.peername = transport.get_extra_info('peername')
-        self.buffer = collections.deque(maxlen=20)
         self.transport = transport
         print('{}: Connection from {}'.format(self.sockname, self.peername))
-
-        self.conversation_handler_end = False
-        # self.conversation_handler()  # Blocking
 
     def connection_lost(self, exc):
         ''' Callback when the client disconnects '''
         print('{}: {} disconnected'.format(self.sockname, self.peername))
+        self.end_conversation()
         self.transport.close()
 
     def data_received(self, data):
@@ -33,10 +36,13 @@ class VAServerProtocol(asyncio.Protocol):
         ''' Returns whether the read buffer has data '''
         return len(self.buffer) != 0
 
-    def read(self, blocking=True):
+    @asyncio.coroutine
+    async def read(self, blocking=True):
         ''' Read data from the client via a circular buffer '''
+        loop = asyncio.get_event_loop()
         empty_buffer = True
-        while empty_buffer:
+        while empty_buffer and loop.is_running():
+            await asyncio.sleep(0)
             empty_buffer = not self.data_available()
             if not blocking:
                 break
@@ -49,11 +55,16 @@ class VAServerProtocol(asyncio.Protocol):
         ''' Write data to the client '''
         self.transport.write(message.encode("utf-8"))
 
-    def conversation_handler(self):
+    @asyncio.coroutine
+    async def conversation_handler(self):
         ''' Handles the conversation between the virtual assistant and user '''
-        while not self.conversation_handler_end:
-            pass
+        loop = asyncio.get_event_loop()
+        while not self.conversation_handler_end and loop.is_running():
+            await asyncio.sleep(0)
             # conversation = Conversation(self)
+
+            message = await self.read()
+            self.write("I got \"{}\"".format(message))
 
             # Wait for module ack
 

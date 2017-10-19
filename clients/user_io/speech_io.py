@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import asyncio
 
 try:
     from .base_io import BaseIO
@@ -230,7 +231,8 @@ class SpeechIO(BaseIO):
     def write(self, text):
         self.tts.say(text)
 
-    def read(self, blocking=True):
+    @asyncio.coroutine
+    async def read(self, blocking=True):
         # while not self.stt.data_available():
         #     if blocking is False:
         #         return None
