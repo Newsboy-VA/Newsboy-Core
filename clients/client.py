@@ -19,36 +19,38 @@ class VAClient(object):
             self.io_handle = user_io.SpeechIO()
 
         loop = asyncio.get_event_loop()
-        coro = loop.create_connection(lambda: VAClientProtocol(loop),
+        coro = loop.create_connection(VAClientProtocol,
                                       host=host,
                                       port=port)
         transport, self.protocol = loop.run_until_complete(coro)
-        # print(asyncio.iscoroutinefunction(self.user_to_assistant))
-        # loop.run_until_complete(self.user_to_assistant)
-        # asyncio.ensure_future(self.assistant_to_user)
-        # loop.create_task()
+        loop.run_until_complete(self.user_to_assistant())
+        loop.run_until_complete(self.assistant_to_user())
 
         loop.run_forever()
         loop.close()
 
     @asyncio.coroutine
-    def user_to_assistant(self):
+    async def user_to_assistant(self):
         ''' Forwards data from the user to the VA '''
-        while True:
+        loop = asyncio.get_event_loop()
+        while not loop.is_running():
+            await asyncio.sleep(0)
             message = self.io_handle.read()
             self.protocol.write(message)
 
     @asyncio.coroutine
-    def assistant_to_user(self):
+    async def assistant_to_user(self):
         ''' Forwards data from the VA to the user '''
-        while True:
+        loop = asyncio.get_event_loop()
+        while not loop.is_running():
+            await asyncio.sleep(0)
             message = self.protocol.read()
             self.io_handle.write(message)
 
 
 class VAClientProtocol(asyncio.Protocol):
-    def __init__(self, loop):
-        self.loop = loop
+    def __init__(self):
+        self.loop = asyncio.get_event_loop()
 
     def connection_made(self, transport):
         ''' Callback when the server connection is established '''
@@ -66,8 +68,11 @@ class VAClientProtocol(asyncio.Protocol):
     def data_received(self, data):
         ''' Callback when the client gets data '''
         message = data.decode()
-        self.buffer.append(message)
         print('{}: Received "{}"'.format(self.sockname, message))
+        # if ...
+        # elif...
+        # else:
+        self.buffer.append(message)
 
     def data_available(self):
         ''' Returns whether the read buffer has data '''
