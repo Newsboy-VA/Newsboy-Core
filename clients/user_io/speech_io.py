@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import asyncio
+import collections
 
 try:
     from .base_io import BaseIO
@@ -16,7 +18,7 @@ import speech_recognition
 
 class SpeechRecognition(object):
     ''' A class which performs speech-to-text using sphinx or google '''
-    def __init__(self, local=True):
+    def __init__(self, local=False):
         self.recognizer = speech_recognition.Recognizer()
         # self.recognizer.dynamic_energy_threshold = True
         if local:
@@ -24,22 +26,28 @@ class SpeechRecognition(object):
         else:
             self.decode = self.recognizer.recognize_google
 
-    def listen(self, keyword_entries=None):
+
+    def check_for_data(self):
         ''' Send request to the speech recognition server '''
         with speech_recognition.Microphone() as source:
             self.recognizer.adjust_for_ambient_noise(source)
             # print("Say something!")
-            audio = self.recognizer.listen(source)
+            try:
+                audio = self.recognizer.listen(source, timeout=1)
+            except speech_recognition.WaitTimeoutError:
+                return None
 
         try:
-            return self.decode(audio)
+            message = self.decode(audio)
+            # print(message)
+            return message
             # return self.decode(audio, keyword_entries=keywords, show_all=True)
 
         except speech_recognition.UnknownValueError:
             print("Unable to understand audio")
         except speech_recognition.RequestError as e:
             print("Could not request results from Google Speech Recognition service; {0}".format(e))
-        return ""
+        return None
 
 
 
@@ -53,68 +61,68 @@ class ContinousSpeech(object):
         self.dictionary = dictionary
         self.logfn = logfn
         self.input_source_index = input_source_index
-        self.wait_to_resume = wait_to_resume
+        # self.wait_to_resume = wait_to_resume
 
         self.all_speech_data = []
 
-        self.is_running = True
-        self.wait_to_resume_lock = threading.Lock()
-        self.cst = threading.Thread(target=self.start_listening, name="ContinuousSpeechThread")
-        self.cst.start()
+        # self.is_running = True
+        # self.wait_to_resume_lock = threading.Lock()
+        # self.cst = threading.Thread(target=self.start_listening, name="ContinuousSpeechThread")
+        # self.cst.start()
 
-    def start_listening(self):
-        ''' Starts streaming. Pauses until self.resume has been called '''
-
-        config = Decoder.default_config()
-        config.set_string('-hmm', path.join(self.model_dir, self.hmm))
-        config.set_string('-lm', path.join(self.model_dir, self.lm))
-        config.set_string('-dict', path.join(self.model_dir, self.dictionary))
-        config.set_string('-logfn', self.logfn)
-
-        decoder = Decoder(config)
-
-        p = pyaudio.PyAudio()
-        stream = p.open(format=pyaudio.paInt16,
-                        channels=2,
-                        # rate=44100
-                        rate=16000,
-                        input=True,
-                        output=False,
-                        input_device_index=self.input_source_index,
-                        frames_per_buffer=1024)
-        stream.start_stream()
-
-        in_speech_bf = False
-        decoder.start_utt()
-
-        self.wait_to_resume_lock.acquire()
-
-        while self.is_running:
-            buf = stream.read(1024, exception_on_overflow=False)
-            if buf:
-                decoder.process_raw(buf, False, False)
-                if decoder.get_in_speech() != in_speech_bf:
-                    in_speech_bf = decoder.get_in_speech()
-                    if not in_speech_bf:
-                        decoder.end_utt()
-                        if self.wait_to_resume:
-                            stream.stop_stream()
-
-                        phrase = decoder.hyp().hypstr
-                        if phrase != "":
-                            self.all_speech_data.append(phrase)
-
-                            if self.wait_to_resume:
-                                # print("waiting")
-                                self.wait_to_resume_lock.acquire()
-                                # print("resuming")
-
-                        if self.wait_to_resume:
-                            stream.start_stream()
-                        decoder.start_utt()
-            else:
-                break
-        decoder.end_utt()
+    # def start_listening(self):
+    #     ''' Starts streaming. Pauses until self.resume has been called '''
+    #
+    #     config = Decoder.default_config()
+    #     config.set_string('-hmm', path.join(self.model_dir, self.hmm))
+    #     config.set_string('-lm', path.join(self.model_dir, self.lm))
+    #     config.set_string('-dict', path.join(self.model_dir, self.dictionary))
+    #     config.set_string('-logfn', self.logfn)
+    #
+    #     decoder = Decoder(config)
+    #
+    #     p = pyaudio.PyAudio()
+    #     stream = p.open(format=pyaudio.paInt16,
+    #                     channels=2,
+    #                     # rate=44100
+    #                     rate=16000,
+    #                     input=True,
+    #                     output=False,
+    #                     input_device_index=self.input_source_index,
+    #                     frames_per_buffer=1024)
+    #     stream.start_stream()
+    #
+    #     in_speech_bf = False
+    #     decoder.start_utt()
+    #
+    #     self.wait_to_resume_lock.acquire()
+    #
+    #     while self.is_running:
+    #         buf = stream.read(1024, exception_on_overflow=False)
+    #         if buf:
+    #             decoder.process_raw(buf, False, False)
+    #             if decoder.get_in_speech() != in_speech_bf:
+    #                 in_speech_bf = decoder.get_in_speech()
+    #                 if not in_speech_bf:
+    #                     decoder.end_utt()
+    #                     if self.wait_to_resume:
+    #                         stream.stop_stream()
+    #
+    #                     phrase = decoder.hyp().hypstr
+    #                     if phrase != "":
+    #                         self.all_speech_data.append(phrase)
+    #
+    #                         if self.wait_to_resume:
+    #                             # print("waiting")
+    #                             self.wait_to_resume_lock.acquire()
+    #                             # print("resuming")
+    #
+    #                     if self.wait_to_resume:
+    #                         stream.start_stream()
+    #                     decoder.start_utt()
+    #         else:
+    #             break
+    #     decoder.end_utt()
 
     def listen(self, local=True):
         ''' Starts streaming. Pauses until self.resume has been called '''
@@ -129,7 +137,7 @@ class ContinousSpeech(object):
 
         p = pyaudio.PyAudio()
         stream = p.open(format=pyaudio.paInt16,
-                        channels=2,
+                        channels=1,
                         # rate=44100
                         rate=16000,
                         input=True,
@@ -204,16 +212,16 @@ class ESpeak(object):
 
 
 class SpeechIO(BaseIO):
-    """docstring for SpeechIO."""
+    ''' An interface with the user via speech '''
 
     def __init__(self,
-                 model_dir="./models",
-                 hmm="en-us/en-us",
-                 lm="en-us/en-us.lm.bin",
-                 dictionary="en-us/cmudict-en-us.dict",
+                #  model_dir="./models",
+                #  hmm="en-us/en-us",
+                #  lm="en-us/en-us.lm.bin",
+                #  dictionary="en-us/cmudict-en-us.dict",
                  input_source_index=0):
 
-        super(self.__class__, self).__init__()
+        super().__init__()
 
         # Input
         # self.stt = ContinousSpeech(model_dir=model_dir,
@@ -221,52 +229,44 @@ class SpeechIO(BaseIO):
         #                            lm=lm,
         #                            dictionary=dictionary,
         #                            input_source_index=input_source_index,
-        #                            wait_to_resume=True)
+        #                            #  wait_to_resume=True)
+        #                            )
 
         self.stt = SpeechRecognition(local=False)
         # Output
+        # Include the ability to change the voice and engine
         self.tts = ESpeak()
 
+    def check_for_data(self):
+        ''' Check once for data from the stt engine '''
+        message = self.stt.check_for_data()
+        print(message)
+        self.buffer.append(message)
+
     def write(self, text):
+        ''' Write data to the tts engine '''
         self.tts.say(text)
-
-    def read(self, blocking=True):
-        # while not self.stt.data_available():
-        #     if blocking is False:
-        #         return None
-
-        # user_response = self.stt.get_latest_speech_data()
-        user_response = self.stt.listen()
-
-        return user_response
-
-    def resume_reading(self):
-        pass  # self.stt.resume()
-
-    def stop_reading(self):
-        ''' Stop reading. Note that this cannot be undone '''
-        # self.stt.stop()
 
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='Listen and repear audio input.')
-    parser.add_argument('--model-dir', type=str, default="./models")
-    parser.add_argument('-hmm', type=str, default="en-us/cmusphinx-en-us-5.2")
-    parser.add_argument('-lm', type=str, default="en-us/en-70k-0.2-pruned.lm")
-    parser.add_argument('-dictionary', type=str,
-                        default="en-us/cmudict-en-us.dict")
-    parser.add_argument('-logfn', type=str, default="/dev/null")
+        description='Listen and repeat audio input.')
+    # parser.add_argument('--model-dir', type=str, default="./models")
+    # parser.add_argument('-hmm', type=str, default="en-us/cmusphinx-en-us-5.2")
+    # parser.add_argument('-lm', type=str, default="en-us/en-70k-0.2-pruned.lm")
+    # parser.add_argument('-dictionary', type=str,
+    #                     default="en-us/cmudict-en-us.dict")
+    # parser.add_argument('-logfn', type=str, default="/dev/null")
     parser.add_argument('--input-source-index', type=int, default=0)
 
     args = parser.parse_args()
 
-    speech_io = SpeechIO(model_dir=args.model_dir,
-                         hmm=args.hmm,
-                         lm=args.lm,
-                         dictionary=args.dictionary,
+    speech_io = SpeechIO(  # model_dir=args.model_dir,
+                         # hmm=args.hmm,
+                         # lm=args.lm,
+                         # dictionary=args.dictionary,
                          input_source_index=args.input_source_index,
                          )
 

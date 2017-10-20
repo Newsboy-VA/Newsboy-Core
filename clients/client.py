@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
-import socket
+import asyncio
+import collections
+import sys
+import curses
+import argparse
 
 import user_io
-
-import argparse
 
 
 class VAClient(object):
@@ -18,78 +20,108 @@ class VAClient(object):
         elif io_method == "speech":
             self.io_handle = user_io.SpeechIO()
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((self.host, self.port))
-        self.socket.settimeout(1)
+        loop = asyncio.get_event_loop()
+        coro = loop.create_connection(VAClientProtocol,
+                                      host=host,
+                                      port=port)
+        transport, self.protocol = loop.run_until_complete(coro)
 
-        self.connection = VAServerConnection(self.socket)
-
-        while True:
-            # self.server_write(self.user_read())
-            self.user_write(self.server_read())
-        self.close()
-
-    def user_write(self, string_data):
-        ''' Sends data to the user '''
-        self.io_handle.write(string_data)
-
-    def user_read(self):
-        ''' Gets data from the user '''
-        return self.io_handle.read()
-
-    def server_write(self, string_data):
-        ''' Sends data to the assistant '''
-        self.connection.send(string_data)
-
-    def server_read(self):
-        ''' Gets data from the assistant '''
-        return self.connection.recv()
-
-    def server_close(self):
-        ''' Permanently closes the connection '''
-        self.connection.close()
-
-    def server_is_connected(self):
-        ''' Checks to see if the assistant is still there '''
-        return self.connection.is_connected()
-
-
-class VAServerConnection(object):
-    def __init__(self, socket):
-        self.socket = socket
-
-    def send(self, string_data):
-        ''' Sends data to the assistant '''
-        self.socket.send(string_data.encode("utf-8"))
-
-    def recv(self):
-        ''' Gets data from the assistant '''
+        loop.create_task(self.user_to_assistant())
+        loop.create_task(self.assistant_to_user())
         try:
-            return self.socket.recv(1024).decode("utf-8")
-        except socket.timeout:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+
+        if sys.version_info[1] >= 6:
+            loop.run_until_complete(loop.shutdown_asyncgens())
+        loop.close()
+
+    @asyncio.coroutine
+    async def user_to_assistant(self):
+        ''' Forwards data from the user to the VA '''
+        loop = asyncio.get_event_loop()
+        while loop.is_running():
+            await asyncio.sleep(0)
+            message = await self.io_handle.read()
+            if message is not None:
+                self.protocol.write(message)
+
+    @asyncio.coroutine
+    async def assistant_to_user(self):
+        ''' Forwards data from the VA to the user '''
+        loop = asyncio.get_event_loop()
+        while loop.is_running():
+            await asyncio.sleep(0)
+            message = await self.protocol.read()
+            if message is not None:
+                self.io_handle.write(message)
+
+
+class VAClientProtocol(asyncio.Protocol):
+    def connection_made(self, transport):
+        ''' Callback when the server connection is established '''
+        self.sockname = transport.get_extra_info('sockname')
+        self.peername = transport.get_extra_info('peername')
+        self.buffer = collections.deque(maxlen=20)
+        self.transport = transport
+        # print('{}: Connected to {}'.format(self.sockname, self.peername))
+
+    def connection_lost(self, exc):
+        ''' Callback when the server disconnects '''
+        # print('{}: The server has disappeared!'.format(self.sockname))
+        self.transport.close()
+        loop = asyncio.get_event_loop()
+        loop.stop()
+
+    def data_received(self, data):
+        ''' Callback when the client gets data '''
+        message = data.decode()
+        # print('{}: Received "{}"'.format(self.sockname, message))
+        # if ...
+        # elif...
+        # else:
+        self.buffer.append(message)
+
+    def data_available(self):
+        ''' Returns whether the read buffer has data '''
+        return len(self.buffer) != 0
+
+    @asyncio.coroutine
+    async def read(self, blocking=True):
+        ''' Read data from the server via a circular buffer '''
+        loop = asyncio.get_event_loop()
+        empty_buffer = True
+        while empty_buffer and loop.is_running():
+            await asyncio.sleep(0)
+            empty_buffer = not self.data_available()
+            if not blocking:
+                break
+        if empty_buffer:
             return None
 
-    def close(self):
-        ''' Permanently closes the connection '''
-        self.socket.close()
+        return self.buffer.popleft()
 
-    def is_connected(self):
-        ''' Checks to see if the assistant is still there '''
-        try:
-            self.send("are you still there?")
-            return True
-        except (ConnectionResetError, BrokenPipeError):
-            return False
+    def write(self, message):
+        ''' Write data to the server '''
+        self.transport.write(message.encode("utf-8"))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Start a client to connect to the Virtual Assistant.')
     parser.add_argument('--io-method', type=str, default="text")
-    parser.add_argument('--host', type=str, default='')
+    parser.add_argument('--host', type=str, default='localhost')
     parser.add_argument('--port', type=int, default=55801)
     parser.add_argument('--continuous', default=False, action="store_true")
 
     args = parser.parse_args()
-
-    client = VAClient(args.host, args.port, args.io_method)
+    try:
+        client = VAClient(args.host, args.port, args.io_method)
+    except Exception as e:
+        print(e)
+        # pass
+    print("hi")
+    if args.io_method == "text":
+        curses.echo()
+        curses.endwin()

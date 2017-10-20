@@ -1,137 +1,84 @@
 
 
-import threading
-import socket
+import asyncio
+import collections
+
+# from conversation import Conversation
 
 
-class VAServer(object):
-    ''' A server object which talks to all clients '''
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
+class VAServerProtocol(asyncio.Protocol):
+    def __init__(self):
+        self.buffer = collections.deque(maxlen=20)
+        self.conversation_handler_end = False
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.conversation_handler())
 
-        self.client_dict = dict()
+    def connection_made(self, transport):
+        ''' Callback when the client connects '''
+        self.sockname = transport.get_extra_info('sockname')
+        self.peername = transport.get_extra_info('peername')
+        self.transport = transport
+        print('{}: Connection from {}'.format(self.sockname, self.peername))
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind((self.host, self.port))
-        self.socket.listen(1)
-        self.socket.settimeout(1)
+    def connection_lost(self, exc):
+        ''' Callback when the client disconnects '''
+        print('{}: {} disconnected'.format(self.sockname, self.peername))
+        self.end_conversation()
+        self.transport.close()
 
-        self.check_connections_end = False
-        self.check_connections_thread = threading.Thread(
-            target=self.check_connections)
-        self.check_connections_thread.start()
+    def data_received(self, data):
+        ''' Callback when the client gets data '''
+        message = data.decode()
+        self.buffer.append(message)
+        print('{}: Received "{}"'.format(self.sockname, message))
 
-    def check_connections(self):
-        ''' Handle the coming and going of connections '''
-        while not self.check_connections_end:
-            # Check for new connections
-            try:
-                new_conn, new_addr = self.socket.accept()
-                self.add_client(new_addr, new_conn)
+    def data_available(self):
+        ''' Returns whether the read buffer has data '''
+        return len(self.buffer) != 0
 
-            except socket.timeout:
-                pass
-
-            # Check which connections are still there
-            bad_addresses = []
-            for client_id, client in self.client_dict.items():
-                if not client.is_connected():
-                    bad_addresses.append(client_id)
-
-            # Remove addresses which have disconnected
-            for client_id in bad_addresses:
-                self.remove_client(client_id)
-
-        self.close()
-
-    def end_check_connections(self):
-        ''' Gracefully ends the connections thread when it can '''
-        self.check_connections_end = True
-
-    def add_client(self, client_id, conn):
-        ''' Adds a client '''
-        client_connection = VAClientConnection(client_id, conn)
-        self.client_dict[client_id] = VAClientHandler(client_connection)
-        print(client_id, "connected")
-
-    def remove_client(self, client_id):
-        ''' Removes a client '''
-        self.client_dict[client_id].end_conversation_handler()
-        self.client_dict.pop(client_id)
-        print(client_id, "disconnected")
-
-    def close(self):
-        ''' Permanently closes the socket '''
-        self.socket.close()
-
-
-class VAClientConnection(object):
-    def __init__(self, client_id, conn):
-        self.client_id = client_id
-        self.conn = conn
-
-    def send(self, string_data):
-        ''' Sends data to the client '''
-        self.conn.send(string_data.encode("utf-8"))
-
-    def recv(self):
-        ''' Gets data from the client '''
-        try:
-            return self.conn.recv(1024).decode("utf-8")
-        except socket.timeout:
+    @asyncio.coroutine
+    async def read(self, blocking=True):
+        ''' Read data from the client via a circular buffer '''
+        loop = asyncio.get_event_loop()
+        empty_buffer = True
+        while empty_buffer and loop.is_running():
+            await asyncio.sleep(0)
+            empty_buffer = not self.data_available()
+            if not blocking:
+                break
+        if empty_buffer:
             return None
 
-    def is_connected(self):
-        ''' Checks to see if the client is still there '''
-        try:
-            self.send("are you still there?")
-            return True
-        except (ConnectionResetError, BrokenPipeError):
-            return False
 
+        return self.buffer.popleft()
 
-class VAClientHandler(object):
-    def __init__(self, connection, continuous=False):
-        self.connection = connection
-        self.continuous = continuous
+    def write(self, message):
+        ''' Write data to the client '''
+        self.transport.write(message.encode("utf-8"))
 
-        self.conversation_handler_end = False
-        self.conversation_handler_thread = threading.Thread(
-            target=self.conversation_handler)
-        self.conversation_handler_thread.start()
-
-    def conversation_handler(self):
-        ''' The thread that continuously talks with the client '''
-
-
-        while not self.conversation_handler_end:
+    @asyncio.coroutine
+    async def conversation_handler(self):
+        ''' Handles the conversation between the virtual assistant and user '''
+        loop = asyncio.get_event_loop()
+        while not self.conversation_handler_end and loop.is_running():
+            await asyncio.sleep(0)
             # if client says keyphrase:
-            #     conversation = Conversation(self.client_connection, client_starts)
+            #     conversation = Conversation(self, "client_started")
             # elif user identified:
-            #     conversation = Conversation(self.client_connection, i_start)
+            #     conversation = Conversation(self, "i_start")
 
-            conversation = Conversation(self.client_connection)
+            conversation = Conversation(self)
             while conversation.ongoing:
                 conversation.converse()
 
+
             # Wait for module ack
 
-            if not self.continuous:
-                self.conversation_handler_end = True
+            # Tell client it's done
 
-    def end_conversation_handler(self):
-        ''' Gracefully ends the conversation thread when it can '''
+            # if not self.continuous:
+            #     self.conversation_handler_end = True
+
+    def end_conversation(self):
+        ''' Closes the connection when the conversation is done '''
         self.conversation_handler_end = True
-
-    def send(self, string_data):
-        ''' Sends data to the client '''
-        self.connection.send()
-
-    def recv(self):
-        ''' Gets data from the client '''
-        return self.connection.recv()
-
-    def is_connected(self):
-        ''' Checks to see if the client is still there '''
-        return self.connection.is_connected()

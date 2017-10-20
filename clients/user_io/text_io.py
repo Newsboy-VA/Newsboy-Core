@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import collections
+import curses
+
 try:
     from .base_io import BaseIO
 except SystemError:
@@ -7,16 +10,34 @@ except SystemError:
 
 
 class TextIO(BaseIO):
-    """docstring for TextIO."""
+    ''' An interface with the user via a terminal '''
+    def __init__(self):
+        super().__init__()
+        self.stdscr = curses.initscr()
+        self.stdscr.nodelay(True)
+        curses.echo()
+        # self.stdscr.clear()
+        self.line = ''
 
-    def write(self, text):
-        if text is not "":
-            print(text)
+    def check_for_data(self):
+        ''' Check once for data from the terminal '''
+        self.stdscr.refresh()
 
-    def read(self, blocking=True):
-        user_response = input()
+        char_code = self.stdscr.getch()
+        if char_code != curses.ERR:
+            char = chr(char_code)
+            if char != '\n':
+                self.line += char
+            else:
+                self.buffer.append(self.line)
+                self.line = ''
+                print(end="\n\r")  # TODO: Make this heppen elsewhere
 
-        return user_response
+
+    def write(self, message):
+        ''' Write data to the terminal '''
+        print(message + '\r')
+        self.stdscr.refresh()
 
 
 if __name__ == "__main__":
