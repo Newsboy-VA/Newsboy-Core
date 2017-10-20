@@ -103,8 +103,17 @@ class VAClientHandler(object):
 
     def conversation_handler(self):
         ''' The thread that continuously talks with the client '''
+
+
         while not self.conversation_handler_end:
-            # conversation = Conversation(self.client_connection)
+            # if client says keyphrase:
+            #     conversation = Conversation(self.client_connection, client_starts)
+            # elif user identified:
+            #     conversation = Conversation(self.client_connection, i_start)
+
+            conversation = Conversation(self.client_connection)
+            while conversation.ongoing:
+                conversation.converse()
 
             # Wait for module ack
 

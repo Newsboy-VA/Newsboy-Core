@@ -9,10 +9,10 @@ class NLU(object):
     ''' A class for performing basic Natural Language Understanding '''
     def __init__(self, module_dir="../modules"):
         self.module_dir = module_dir
-        self.intent_list = []
-        self.update_intent_list()
+        self.available_intent_list = []
+        self.update_available_intent_list()
 
-    def update_intent_list(self):
+    def update_available_intent_list(self):
         ''' Iterates through modules and finds the intents '''
         for listing in os.listdir(self.module_dir):
             module = os.path.join(self.module_dir, listing)
@@ -27,27 +27,47 @@ class NLU(object):
                 intents_file.close()
                 # print(intents_json)
                 for intent_dict in intents_json:
-                    intent_ob = Intent(intent_dict, entities_json)
-                    self.intent_list.append(intent_ob)
+                    intent_matcher_ob = IntentMatcher(intent_dict, entities_json)
+                    self.available_intent_list.append(intent_matcher_ob)
 
-    def find_intent(self, phrase):
+    def find_intents_in_phrase(self, phrase):
         ''' Returns a list of matching intents '''
         matching_intents = []
-        for intent in self.intent_list:
-            if intent.is_intent_match(phrase):
-                matching_intents.append(intent)
+        for intent_matcher_ob in self.available_intent_list:
+            if intent_matcher_ob.is_intent_match(phrase):
+                arguments_in_phrase = intent_matcher_ob.find_all_arguments(phrase)
+                matching_intents.append(Intent(intent_matcher_ob.name, arguments_in_phrase))
 
         return matching_intents
 
+    def find_args_for_intent(self, intent_name, phrase):
+        ''' Returns a list of arguments found in the phrase to the given intent '''
+        for intent_matcher_ob in self.available_intent_list:
+            if intent_matcher_ob.name == intent_name:
+                return intent_matcher_ob.find_all_arguments(phrase)
+
+
 
 class Intent(object):
+    """docstring for Intent."""
+    def __init__(self, name, arguments):
+        super(Intent, self).__init__()
+        self.name = name
+        self.argument_dict = arguments
+
+
+    def is_full(self):
+        return False
+
+
+class IntentMatcher(object):
     ''' A class to find arguments for a given intent '''
     def __init__(self, intent_json, entities_json):
         self.name = intent_json['name']
-        self.callback = intent_json['function']
+
         self.intent_regex = self.generate_intent_regex(
             intent_json['name'], intent_json['synonyms'])
-        self.argument_dict = self.generate_argument_dict(
+        self.argument_regex_dict = self.generate_argument_regex_dict(
             intent_json['arguments'], entities_json)
 
     def generate_intent_regex(self, name, synonyms=list()):
@@ -61,7 +81,7 @@ class Intent(object):
 
         return re.compile(pattern, re.IGNORECASE)
 
-    def generate_argument_dict(self, arguments, entities_json):
+    def generate_argument_regex_dict(self, arguments, entities_json):
         ''' Generates a dictionary of the form {"argument": regex} '''
 
         argument_dict = dict()
@@ -108,6 +128,13 @@ class Intent(object):
         ''' Returns True if the word_list contains the intent '''
         return self.intent_regex.search(phrase) is not None
 
+    def is_full(self):
+        ''' Returns True if all arguments have a value '''
+        print(self.argument_dict.values())
+        if None in self.argument_dict.values():
+            return False
+        return True
+
     def is_full_match(self, phrase):
         ''' Returns True if the word_list fills all the arguments '''
         if not self.is_intent_match(phrase):
@@ -118,7 +145,7 @@ class Intent(object):
 
     def find_argument(self, argument, phrase):
         ''' Returns the value of the given argument, None if not present '''
-        match = self.argument_dict[argument].search(phrase)
+        match = self.argument_regex_dict[argument].search(phrase)
         if match is not None:
             match_dict = match.groupdict()
             if argument == 'number':
@@ -132,10 +159,14 @@ class Intent(object):
                         return word
         return None
 
+    def match_arguments(self, phrase):
+        ''' Identifies arguments in phrase and adds them to argument_dict '''
+        self.argument_dict.update(self.find_all_arguments(phrase))
+
     def find_all_arguments(self, phrase):
         ''' Returns a dictionary of arguments and their values '''
         all_arguments = dict()
-        for argument in self.argument_dict.keys():
+        for argument in self.argument_regex_dict.keys():
             all_arguments[argument] = self.find_argument(argument, phrase)
 
         return all_arguments
@@ -160,6 +191,7 @@ class Intent(object):
 
         return string_representation
 
+nlu = NLU("./modules")
 
 if __name__ == "__main__":
     nlu = NLU()
