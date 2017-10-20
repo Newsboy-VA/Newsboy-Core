@@ -1,5 +1,9 @@
 import copy
-from .nlu import nlu
+from nlu import NLU
+import asyncio
+
+
+nlu = NLU()
 
 class Context(object):
     """docstring for Context."""
@@ -38,12 +42,12 @@ class Context(object):
         # intent.argument_dict.update(args)
         if not self.is_in_context(new_intent):
             self.intents_list.append(copy.copy(new_intent))
-            print("Added new intent {} to the context".format(new_intent.name))
+            # self.speak_to_client("Added new intent {} to the context".format(new_intent.name))
         else:
             for intent in self.intents_list:
                 if intent.name == new_intent.name:
                     intent.argument_dict.update({k:v for k,v in new_intent.argument_dict.items() if v is not None})
-                    print("Updating existing intent, {}. Arguments now: {}".format(intent.name, intent.argument_dict))
+                    # self.speak_to_client("Updating existing intent, {}. Arguments now: {}".format(intent.name, intent.argument_dict))
 
     def clear(self):
         self.intents_list = []
@@ -52,31 +56,28 @@ class Context(object):
 class Conversation(object):
     """docstring for Conversation."""
     def __init__(self, client):
-        super(Conversation, self).__init__()
-
         # Who the conversation is with
         self.client = client
-
         self.my_turn = None
         self.ongoing = False
         self.context = Context()
 
+        self.start()
 
-    """ If newsboy is starting a conversation with the client.
-        Else the conversation has been started by the client so this method is not needed.
-    """
     def start(self, phrase=None):
         self.ongoing = True
         if phrase is not None:
-            self.ask_client(phrase)
+            self.speak_to_client(phrase)
 
-    def ask_client(self, phrase):
+    def speak_to_client(self, phrase):
         self.client.write(phrase)
 
-    def listen_to_client(self):
-        return self.client.read()
+    @asyncio.coroutine
+    async def listen_to_client(self):
+        return await self.client.read()
 
-    def converse(self, phrase = None):
+    @asyncio.coroutine
+    async def converse(self, phrase = None):
         # if self.my_turn:
         #     self.ask_client(adjacency)
         #
@@ -88,25 +89,23 @@ class Conversation(object):
 
         ''' ASK (an adjacency pair) If phrase is None then it is assumed the client will lead with an adjacency pair '''
         if phrase is not None:
-            self.ask_client(phrase)
+            self.speak_to_client(phrase)
 
         ''' LISTEN '''
-        client_response = self.listen_to_client()
+        client_response = await self.listen_to_client()
 
         ''' RESPOND '''
-        self.reply(client_response)
+        await self.reply(client_response)
 
         # UNDERSTAND (expect the respective adjacency pair back)
 
-
-    def reply(self, phrase):
-
+    @asyncio.coroutine
+    async def reply(self, phrase):
         # Acknowledge
-        self.client.write("You said '" + phrase + "'")
-
+        # self.speak_to_client("You said '" + phrase + "'\n")
         # Understand intent of user
         for intent in nlu.find_intents_in_phrase(phrase):
-            print("Intent found to be {} with arguments {}".format(intent.name, intent.argument_dict))
+            # self.speak_to_client("Intent found to be {} with arguments {}\n".format(intent.name, intent.argument_dict))
             self.context.update(intent)
 
         ''' Call function for users intent.
@@ -115,10 +114,10 @@ class Conversation(object):
         if not self.context.is_empty():
             self.context.update_arguments(phrase)
             if self.context.have_full_intent():
-                self.client.write(" All arguments found for the {} intent. Calling function... ".format(self.context.get_first_full_intent().name))
+                self.speak_to_client(" All arguments found for the {} intent. Calling function... \n".format(self.context.get_first_full_intent().name))
                 self.ongoing = False
             else:
-                self.converse("What " + [entity for entity,value in self.context.intents_list[0].argument_dict.items() if value is None ][0])
+                await self.converse("What " + [entity for entity,value in self.context.intents_list[0].argument_dict.items() if value is None ][0] + " ? ")
 
 
 
@@ -141,9 +140,10 @@ class Conversation(object):
         # # REACT
         # carry out intent
 
-    def end(self):
-        self.conversation_ongoing = False
-        self.client.write("Goodbye")
+    def end(self, phrase=None):
+        self.ongoing = False
+        if phrase is not None:
+            self.speak_to_client(phrase + "\n")
 
 #
 #

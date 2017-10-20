@@ -3,7 +3,7 @@
 import asyncio
 import collections
 
-# from conversation import Conversation
+from conversation import Conversation
 
 
 class VAServerProtocol(asyncio.Protocol):
@@ -49,7 +49,6 @@ class VAServerProtocol(asyncio.Protocol):
         if empty_buffer:
             return None
 
-
         return self.buffer.popleft()
 
     def write(self, message):
@@ -69,8 +68,11 @@ class VAServerProtocol(asyncio.Protocol):
 
             conversation = Conversation(self)
             while conversation.ongoing:
-                conversation.converse()
 
+                # await asyncio.sleep(0)
+                await conversation.converse()
+
+            conversation.end()
 
             # Wait for module ack
 

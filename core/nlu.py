@@ -191,7 +191,7 @@ class IntentMatcher(object):
 
         return string_representation
 
-nlu = NLU("./modules")
+nlu = NLU("../modules")
 
 if __name__ == "__main__":
     nlu = NLU()
