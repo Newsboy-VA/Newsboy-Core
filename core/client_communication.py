@@ -6,8 +6,38 @@ import collections
 # from conversation import Conversation
 
 
+class VAClientHandler(object):
+    def __init__(self, port):
+        self.client_list = []
+        self.loop = asyncio.get_event_loop()
+
+        # Each client connection will create a new protocol instance
+        coro = self.loop.create_server(lambda: VAServerProtocol(self),
+                                  host='localhost',
+                                  port=port)
+        self.server = self.loop.run_until_complete(coro)
+
+        print("Listening for clients on {}".format(self.server.sockets[0].getsockname()))
+
+    def add_client(self, protocol):
+        ''' Adds a client to the client list '''
+        self.client_list.append(protocol)
+
+    def remove_client(self, protocol):
+        ''' Remove a client from the client list '''
+        self.client_list.remove(protocol)
+
+    def close(self):
+        ''' Closes the server down '''
+        self.server.close()
+        self.loop.run_until_complete(server.wait_closed())
+
+
 class VAServerProtocol(asyncio.Protocol):
-    def __init__(self):
+    def __init__(self, client_handler):
+        self.client_handler = client_handler
+        self.client_handler.add_client(self)
+
         self.buffer = collections.deque(maxlen=20)
         self.conversation_handler_end = False
         loop = asyncio.get_event_loop()
@@ -18,19 +48,20 @@ class VAServerProtocol(asyncio.Protocol):
         self.sockname = transport.get_extra_info('sockname')
         self.peername = transport.get_extra_info('peername')
         self.transport = transport
-        print('{}: Connection from {}'.format(self.sockname, self.peername))
+        print("Client Handler: Connection from {}".format(self.peername))
 
     def connection_lost(self, exc):
         ''' Callback when the client disconnects '''
-        print('{}: {} disconnected'.format(self.sockname, self.peername))
+        print("Client Handler: {} disconnected".format(self.peername))
         self.end_conversation()
         self.transport.close()
+        self.client_handler.remove_client(self)
 
     def data_received(self, data):
-        ''' Callback when the client gets data '''
+        ''' Callback when the server gets data '''
         message = data.decode()
         self.buffer.append(message)
-        print('{}: Received "{}"'.format(self.sockname, message))
+        print("Client Handler: Received \"{}\"".format(message))
 
     def data_available(self):
         ''' Returns whether the read buffer has data '''

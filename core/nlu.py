@@ -22,8 +22,8 @@ class NLU(object):
                 entities_json = json.load(entities_file)['entities']
                 entities_file.close()
                 # print(entities_json)
-                intents_file = open(os.path.join(module, "intents.json"))
-                intents_json = json.load(intents_file)['intents']
+                intents_file = open(os.path.join(module, "actions.json"))
+                intents_json = json.load(intents_file)['actions']
                 intents_file.close()
                 # print(intents_json)
                 for intent_dict in intents_json:
@@ -163,11 +163,11 @@ class Intent(object):
 
 if __name__ == "__main__":
     nlu = NLU()
-    # print(nlu.find_intent("Hello"))
-    # print(nlu.find_intent("What's the time"))
-    # print(nlu.find_intent("How are you today?"))
-    # print(nlu.find_intent("Can you tell me the time?"))
-    # print(nlu.find_intent("start a timer for ten minutes"))
-    # print(nlu.find_intent("create timer for ten"))
-    phrase = "set a timer for 10 hrs"
+    print(nlu.find_intent("Hello"))
+    print(nlu.find_intent("What's the time"))
+    print(nlu.find_intent("How are you today?"))
+    print(nlu.find_intent("Can you tell me the time?"))
+    print(nlu.find_intent("start a timer for ten minutes"))
+    print(nlu.find_intent("create timer for ten"))
+    phrase = "set a timer for 10"
     print(nlu.find_intent(phrase)[0].find_all_arguments(phrase))

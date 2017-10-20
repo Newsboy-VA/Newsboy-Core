@@ -7,6 +7,7 @@ class Context(object):
         self.parameters = []
 
     def add(self):
+        ''' '''
 
     def clear(self):
         self.intent = None

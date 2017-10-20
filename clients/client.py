@@ -20,28 +20,27 @@ class VAClient(object):
         elif io_method == "speech":
             self.io_handle = user_io.SpeechIO()
 
-        loop = asyncio.get_event_loop()
-        coro = loop.create_connection(VAClientProtocol,
-                                      host=host,
-                                      port=port)
-        transport, self.protocol = loop.run_until_complete(coro)
+        self.loop = asyncio.get_event_loop()
+        coro = self.loop.create_connection(VAClientProtocol,
+                                           host=host,
+                                           port=port)
+        transport, self.protocol = self.loop.run_until_complete(coro)
 
-        loop.create_task(self.user_to_assistant())
-        loop.create_task(self.assistant_to_user())
+        self.loop.create_task(self.user_to_assistant())
+        self.loop.create_task(self.assistant_to_user())
         try:
-            loop.run_forever()
+            self.loop.run_forever()
         except KeyboardInterrupt:
             pass
 
         if sys.version_info[1] >= 6:
-            loop.run_until_complete(loop.shutdown_asyncgens())
-        loop.close()
+            self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+        self.loop.close()
 
     @asyncio.coroutine
     async def user_to_assistant(self):
         ''' Forwards data from the user to the VA '''
-        loop = asyncio.get_event_loop()
-        while loop.is_running():
+        while self.loop.is_running():
             await asyncio.sleep(0)
             message = await self.io_handle.read()
             if message is not None:
@@ -50,8 +49,7 @@ class VAClient(object):
     @asyncio.coroutine
     async def assistant_to_user(self):
         ''' Forwards data from the VA to the user '''
-        loop = asyncio.get_event_loop()
-        while loop.is_running():
+        while self.loop.is_running():
             await asyncio.sleep(0)
             message = await self.protocol.read()
             if message is not None:
@@ -59,6 +57,9 @@ class VAClient(object):
 
 
 class VAClientProtocol(asyncio.Protocol):
+    def __init__(self):
+        self.loop = asyncio.get_event_loop()
+
     def connection_made(self, transport):
         ''' Callback when the server connection is established '''
         self.sockname = transport.get_extra_info('sockname')
@@ -71,8 +72,7 @@ class VAClientProtocol(asyncio.Protocol):
         ''' Callback when the server disconnects '''
         # print('{}: The server has disappeared!'.format(self.sockname))
         self.transport.close()
-        loop = asyncio.get_event_loop()
-        loop.stop()
+        self.loop.stop()
 
     def data_received(self, data):
         ''' Callback when the client gets data '''
@@ -90,9 +90,8 @@ class VAClientProtocol(asyncio.Protocol):
     @asyncio.coroutine
     async def read(self, blocking=True):
         ''' Read data from the server via a circular buffer '''
-        loop = asyncio.get_event_loop()
         empty_buffer = True
-        while empty_buffer and loop.is_running():
+        while empty_buffer and self.loop.is_running():
             await asyncio.sleep(0)
             empty_buffer = not self.data_available()
             if not blocking:

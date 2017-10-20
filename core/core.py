@@ -4,33 +4,29 @@ import asyncio
 import sys
 import argparse
 
-from client_communication import VAServerProtocol
+from client_communication import VAClientHandler
+from module_communication import VAModuleHandler
 
 
 class VirtualAssistant(object):
 
     def __init__(self, port):
-        loop = asyncio.get_event_loop()
-        # Each client connection will create a new protocol instance
-        coro = loop.create_server(VAServerProtocol,
-                                  host='localhost',
-                                  port=port)
-        server = loop.run_until_complete(coro)
+        self.loop = asyncio.get_event_loop()
+        self.client_handler = VAClientHandler(port)
+        self.module_handler = VAModuleHandler(port+1)
 
-        # Serve requests until Ctrl+C is pressed
-        print('Serving on {}'.format(server.sockets[0].getsockname()))
         try:
-            loop.run_forever()
+            self.loop.run_forever()
         except KeyboardInterrupt:
             pass
 
-        # Close the server
-        server.close()
-        loop.run_until_complete(server.wait_closed())
+        # Close the servers
+        client_handler.close()
+        module_handler.close()
 
         if sys.version_info[1] >= 6:
-            loop.run_until_complete(loop.shutdown_asyncgens())
-        loop.close()
+            self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+        self.loop.close()
 
 
 if __name__ == "__main__":
