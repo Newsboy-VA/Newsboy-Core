@@ -3,7 +3,7 @@
 import asyncio
 import collections
 
-# from conversation import Conversation
+from conversation import Conversation
 
 
 class VAClientHandler(object):
@@ -92,10 +92,18 @@ class VAServerProtocol(asyncio.Protocol):
         loop = asyncio.get_event_loop()
         while not self.conversation_handler_end and loop.is_running():
             await asyncio.sleep(0)
-            # conversation = Conversation(self)
+            # if client says keyphrase:
+            #     conversation = Conversation(self, "client_started")
+            # elif user identified:
+            #     conversation = Conversation(self, "i_start")
 
-            message = await self.read()
-            self.write("I got \"{}\"".format(message))
+            conversation = Conversation(self)
+            while conversation.ongoing:
+
+                # await asyncio.sleep(0)
+                await conversation.converse()
+
+            conversation.end()
 
             # Wait for module ack
 
