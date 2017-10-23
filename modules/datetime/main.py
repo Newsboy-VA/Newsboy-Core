@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 
 import logging
-import argparse
+import os.path
+import inspect
 
 from time import strftime
 from num2words import num2words
 
-from module_classes import VAModuleBase
+import sys
+sys.path.append('base_classes')
+from module_base import VAModuleBase
 
 
 class VAModule(VAModuleBase):
-    def __init__(self, host, port):
-        super().__init__(host, port)
+    def __init__(self):
+
+        module_path = os.path.dirname(inspect.getfile(inspect.currentframe()))
+
+        super().__init__(module_path)
 
         self.listen()
 
@@ -63,20 +69,7 @@ class VAModule(VAModuleBase):
 
 
 if __name__ == "__main__":
-    FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(pathname)s: %(message)s'
-    logging.basicConfig(
-        filename='debug.log',
-        level=logging.DEBUG,
-        format=FORMAT,
-        )
 
-    parser = argparse.ArgumentParser(
-        description='Start a module for the virtual assistant to use.')
-    parser.add_argument('--host', type=str, default='localhost')
-    parser.add_argument('--port', type=int, default=55802)
-
-    args = parser.parse_args()
-
-    module = VAModule(args.host, args.port)
+    module = VAModule()
 
     logging.shutdown()

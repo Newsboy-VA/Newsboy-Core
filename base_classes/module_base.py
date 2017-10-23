@@ -5,22 +5,34 @@ import sys
 import os.path
 import logging
 import inspect
+import argparse
 
 import collections
 import json
 
-import sys
-sys.path.append('base_classes')
-from action_base import ActionBase
-
 
 class VAModuleBase(object):
     ''' A module which talks to the virtual assistant '''
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        self.path = os.path.dirname(inspect.getfile(inspect.currentframe()))
+    def __init__(self, module_path):
+        self.path = module_path
         self.name = os.path.split(self.path)[-1]
+
+        FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(pathname)s: %(message)s'
+        logging.basicConfig(
+            filename='debug.log',
+            level=logging.DEBUG,
+            format=FORMAT,
+            )
+
+        parser = argparse.ArgumentParser(
+            description='Start a module for the virtual assistant to use.')
+        parser.add_argument('--host', type=str, default='localhost')
+        parser.add_argument('--port', type=int, default=55802)
+
+        args = parser.parse_args()
+
+        self.host = args.host
+        self.port = args.port
 
         self.available_actions = dict()
         self.update_available_actions()
