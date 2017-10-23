@@ -11,7 +11,8 @@ from conversation import Conversation
 
 
 class VAClientHandler(object):
-    def __init__(self, port):
+    def __init__(self, core, port):
+        self.core = core
         self.available_clients = NamedObjectList()
         self.loop = asyncio.get_event_loop()
 
@@ -51,6 +52,7 @@ class VAServerProtocol(asyncio.Protocol):
         ''' Callback when the client connects '''
         self.sockname = transport.get_extra_info('sockname')
         self.peername = transport.get_extra_info('peername')
+        self.name = self.peername  # For referencing in the available_clients
         self.transport = transport
         logging.info("Connection from {}".format(self.peername))
 
@@ -108,7 +110,8 @@ class VAServerProtocol(asyncio.Protocol):
                 # await asyncio.sleep(0)
                 intent = await conversation.converse()
 
-
+            self.client_handler.core.module_handler.send_request(
+                self.name, 'datetime', intent)
             conversation.end()
 
             # Wait for module ack

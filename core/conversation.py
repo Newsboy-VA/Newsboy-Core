@@ -16,14 +16,14 @@ class Context(object):
 
     def have_full_intent(self):
         for intent in self.intents_list:
-            if None in intent.argument_dict.values():
+            if None in intent['arguments'].values():
                 return False
         return True
 
     def get_first_full_intent(self):
-        # Maybe add some more intellegince for choosing a full intent (most parameters or something)
+        # Maybe add some more intelligence for choosing a full intent (most parameters or something)
         for intent in self.intents_list:
-            if None not in intent.argument_dict.values():
+            if None not in intent['arguments'].values():
                 return intent
 
     def is_in_context(self, new_intent):
@@ -34,9 +34,9 @@ class Context(object):
 
     def update_arguments(self,phrase):
         for intent in self.intents_list:
-            arguments_in_phrase = nlu.find_args_for_intent(intent.name, phrase)
+            arguments_in_phrase = nlu.find_args_for_intent(intent['function'], phrase)
             if arguments_in_phrase is not None:
-                intent.argument_dict.update({k:v for k,v in arguments_in_phrase.items() if v is not None})
+                intent['arguments'].update({k:v for k,v in arguments_in_phrase.items() if v is not None})
 
     def update(self, new_intent):
         # intent.argument_dict.update(args)
@@ -46,7 +46,7 @@ class Context(object):
         else:
             for intent in self.intents_list:
                 if intent.name == new_intent.name:
-                    intent.argument_dict.update({k:v for k,v in new_intent.argument_dict.items() if v is not None})
+                    intent['arguments'].update({k:v for k,v in new_intent['arguments'].items() if v is not None})
                     # self.speak_to_client("Updating existing intent, {}. Arguments now: {}".format(intent.name, intent.argument_dict))
 
     def clear(self):
@@ -95,7 +95,8 @@ class Conversation(object):
         client_response = await self.listen_to_client()
 
         ''' RESPOND '''
-        await self.reply(client_response)
+        return await self.reply(client_response)
+
 
         # UNDERSTAND (expect the respective adjacency pair back)
 
@@ -114,10 +115,11 @@ class Conversation(object):
         if not self.context.is_empty():
             self.context.update_arguments(phrase)
             if self.context.have_full_intent():
-                self.speak_to_client(" All arguments found for the {} intent. Calling function... \n".format(self.context.get_first_full_intent().name))
+                self.speak_to_client(" All arguments found for the {} intent. Calling function...".format(self.context.get_first_full_intent()['function']))
                 self.ongoing = False
+                return self.context.get_first_full_intent()
             else:
-                await self.converse("What " + [entity for entity,value in self.context.intents_list[0].argument_dict.items() if value is None ][0] + " ? ")
+                await self.converse("What " + [entity for entity,value in self.context.intents_list[0]['arguments'].items() if value is None ][0] + " ? ")
 
 
 

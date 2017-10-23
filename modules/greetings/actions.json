@@ -1,7 +1,7 @@
 {
   "actions": [
     {
-      "name": "greeting",
+      "name": "greetings",
       "synonyms": [
         "hello",
         "hi"

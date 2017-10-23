@@ -13,8 +13,8 @@ class VirtualAssistant(object):
 
     def __init__(self, port):
         self.loop = asyncio.get_event_loop()
-        self.client_handler = VAClientHandler(port)
-        self.module_handler = VAModuleHandler(port+1)
+        self.client_handler = VAClientHandler(self, port)
+        self.module_handler = VAModuleHandler(self, port+1)
 
         try:
             self.loop.run_forever()

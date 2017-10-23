@@ -9,6 +9,10 @@ import inspect
 import collections
 import json
 
+import sys
+sys.path.append('base_classes')
+from action_base import ActionBase
+
 
 class VAModuleBase(object):
     ''' A module which talks to the virtual assistant '''
@@ -70,7 +74,7 @@ class Action(object):
     def __init__(self, action_dict, entities_json):
         self.name = action_dict['name']
         self.synonyms = action_dict['synonyms']
-        self.callback = action_dict['function']
+        self.function = action_dict['function']
         self.argument_dict = self.find_arguments(
             action_dict['arguments'], entities_json)
 
@@ -94,35 +98,23 @@ class Action(object):
         return argument_dict
 
     def assert_entities(self):
-        ''' Ensure the callback arguments match the json entities '''
-        callback_args = sorted(self.argument_dict.keys())
-        json_args = sorted(inspect.getargspec(self.callback)[0])
+        ''' Ensure the action arguments match the json entities '''
+        action_args = sorted(self.argument_dict.keys())
+        json_args = sorted(inspect.getargspec(self.function)[0])
 
-        if callback_args != json_args:
+        if action_args != json_args:
             raise AssertionError("Arguments for {} are {} instead of {}".format(
-                self.name, json_args, callback_args))
+                self.name, json_args, action_args))
 
     def assert_parameters(self, *args):
         ''' Ensure the given parameters match their corresponding entities '''
-        # callback_args = sorted(self.arguments.keys())
+        # action_args = sorted(self.arguments.keys())
         # TODO: This function
 
     def __call__(self, *args):
         ''' Perform the given function '''
         self.assert_arguments(*args)
-        return self.callback(*args)
-
-    def __str__(self):
-        string_representation = "{}(".format(self.callback.__name__)
-        for arg in self.argument_dict.keys():
-            string_representation += "{}, ".format(arg)
-        if len(self.argument_dict) != 0:
-            string_representation = string_representation[:-2]
-        string_representation += ")"
-        return string_representation
-
-    def __repr__(self):
-        return self.__str__()
+        return self.function(*args)
 
 
 class VAModuleClientProtocol(asyncio.Protocol):
@@ -153,8 +145,10 @@ class VAModuleClientProtocol(asyncio.Protocol):
         # if 'GET' in data:
             # self.write({data['GET']: getattr(self, data['GET'])})
         # else:
-        if data['HEADER'] == 'REQ':
-            self.module[data['MESSAGE']['ACTION']](*data['MESSAGE']['PARAMS'])
+        if data['HEADER'] == 'REQUEST':
+            # print(data)
+            action = data['MESSAGE']['ACTION']
+            # print(self.module[action['function']](*action['arguments']))
             # setattr(self, *data['MESSAGE'])
         else:
             self.buffer.append(data)

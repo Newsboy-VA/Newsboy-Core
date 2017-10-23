@@ -10,7 +10,8 @@ from datatypes import NamedObjectList
 
 
 class VAModuleHandler(object):
-    def __init__(self, port):
+    def __init__(self, core, port):
+        self.core = core
         self.available_modules = NamedObjectList()
         self.loop = asyncio.get_event_loop()
 
@@ -30,13 +31,13 @@ class VAModuleHandler(object):
         ''' Remove a module from the module list '''
         self.available_modules.remove(protocol)
 
-    def send_request(self, module_name, client_id, intent_dict):
+    def send_request(self, client_id, module_name, intent):
         ''' Sends a request to the given module '''
-        for module in self.available_modules:
-            if module.name == module_name:
-                data = {'HEADER': 'REQ', 'MESSAGE': {
-                    'ACTION': intent_dict['intent'],
-                    'PARAMS': intent_dict['params']
+        module = self.available_modules.get(module_name)
+        if module.name is not None:
+                data = {'HEADER': 'REQUEST', 'MESSAGE': {
+                    'ID': client_id,
+                    'ACTION': intent
                 }}
                 module.write(data)
 
