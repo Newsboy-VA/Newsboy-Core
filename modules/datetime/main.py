@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+import logging
+import argparse
+
 from time import strftime
 from num2words import num2words
-import argparse
 
 from module_classes import VAModuleBase
 
@@ -61,6 +63,13 @@ class VAModule(VAModuleBase):
 
 
 if __name__ == "__main__":
+    FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(pathname)s: %(message)s'
+    logging.basicConfig(
+        filename='debug.log',
+        level=logging.DEBUG,
+        format=FORMAT,
+        )
+
     parser = argparse.ArgumentParser(
         description='Start a module for the virtual assistant to use.')
     parser.add_argument('--host', type=str, default='localhost')
@@ -69,3 +78,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     module = VAModule(args.host, args.port)
+
+    logging.shutdown()

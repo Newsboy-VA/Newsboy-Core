@@ -7,7 +7,7 @@ import re
 
 class NLU(object):
     ''' A class for performing basic Natural Language Understanding '''
-    def __init__(self, module_dir="../modules"):
+    def __init__(self, module_dir="modules"):
         self.module_dir = module_dir
         self.available_intent_list = []
         self.update_available_intent_list()
@@ -191,7 +191,7 @@ class IntentMatcher(object):
 
         return string_representation
 
-nlu = NLU("../modules")
+nlu = NLU("./modules")
 
 if __name__ == "__main__":
     nlu = NLU()

@@ -1,10 +1,12 @@
 
 
 import asyncio
-import collections
-import os.path
 import sys
+import os.path
+import logging
 import inspect
+
+import collections
 import json
 
 
@@ -13,13 +15,13 @@ class VAModuleBase(object):
     def __init__(self, host, port):
         self.host = host
         self.port = port
-        self.path = os.path.dirname( inspect.getfile(inspect.currentframe()))
+        self.path = os.path.dirname(inspect.getfile(inspect.currentframe()))
         self.name = os.path.split(self.path)[-1]
 
         self.available_actions = dict()
         self.update_available_actions()
 
-        # [print(k, '|', v) for k, v in self.available_actions.items()]
+        # [logging.info(k, '|', v) for k, v in self.available_actions.items()]
 
         self.loop = asyncio.get_event_loop()
 
@@ -126,6 +128,7 @@ class Action(object):
 class VAModuleClientProtocol(asyncio.Protocol):
     def __init__(self, module_class):
         self.module = module_class
+        self.name = self.module.name
         self.loop = asyncio.get_event_loop()
 
     def connection_made(self, transport):
@@ -134,19 +137,27 @@ class VAModuleClientProtocol(asyncio.Protocol):
         self.peername = transport.get_extra_info('peername')
         self.buffer = collections.deque(maxlen=20)
         self.transport = transport
-        print('{}: Connected to {}'.format(self.module.name, self.peername))
+        self.write({'HEADER': 'SET', 'MESSAGE': ['name', self.name]})
+        logging.info('{}: Connected to {}'.format(self.name, self.peername))
 
     def connection_lost(self, exc):
         ''' Callback when the server disconnects '''
-        print('{}: The server has disappeared!'.format(self.module.name))
+        logging.info('{}: The server has disappeared!'.format(self.name))
         self.transport.close()
         self.loop.stop()
 
-    def data_received(self, data):
+    def data_received(self, serial_data):
         ''' Callback when the module gets data '''
-        message = data.decode()
-        print('{}: Received "{}"'.format(self.module.name, message))
-        self.buffer.append(message)
+        data = json.loads(serial_data.decode('utf-8'))
+        logging.info('{}: Received "{}"'.format(self.name, data))
+        # if 'GET' in data:
+            # self.write({data['GET']: getattr(self, data['GET'])})
+        # else:
+        if data['HEADER'] == 'REQ':
+            self.module[data['MESSAGE']['ACTION']](*data['MESSAGE']['PARAMS'])
+            # setattr(self, *data['MESSAGE'])
+        else:
+            self.buffer.append(data)
 
     def data_available(self):
         ''' Returns whether the read buffer has data '''
@@ -167,6 +178,7 @@ class VAModuleClientProtocol(asyncio.Protocol):
 
         return self.buffer.popleft()
 
-    def write(self, message):
+    def write(self, data):
         ''' Write data to the server '''
-        self.transport.write(message.encode("utf-8"))
+        serial_data = json.dumps(data).encode('utf-8')
+        self.transport.write(serial_data)

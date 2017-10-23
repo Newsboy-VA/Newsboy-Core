@@ -1,36 +1,40 @@
 
 
 import asyncio
-import collections
+import logging
 
+import collections
+import json
+
+from datatypes import NamedObjectList
 from conversation import Conversation
 
 
 class VAClientHandler(object):
     def __init__(self, port):
-        self.client_list = []
+        self.available_clients = NamedObjectList()
         self.loop = asyncio.get_event_loop()
 
         # Each client connection will create a new protocol instance
         coro = self.loop.create_server(lambda: VAServerProtocol(self),
-                                  host='localhost',
-                                  port=port)
+                                       host='localhost',
+                                       port=port)
         self.server = self.loop.run_until_complete(coro)
 
-        print("Listening for clients on {}".format(self.server.sockets[0].getsockname()))
+        logging.info("Listening for clients on {}".format(self.server.sockets[0].getsockname()))
 
     def add_client(self, protocol):
         ''' Adds a client to the client list '''
-        self.client_list.append(protocol)
+        self.available_clients.append(protocol)
 
     def remove_client(self, protocol):
         ''' Remove a client from the client list '''
-        self.client_list.remove(protocol)
+        self.available_clients.remove(protocol)
 
     def close(self):
         ''' Closes the server down '''
         self.server.close()
-        self.loop.run_until_complete(server.wait_closed())
+        self.loop.run_until_complete(self.server.wait_closed())
 
 
 class VAServerProtocol(asyncio.Protocol):
@@ -48,20 +52,20 @@ class VAServerProtocol(asyncio.Protocol):
         self.sockname = transport.get_extra_info('sockname')
         self.peername = transport.get_extra_info('peername')
         self.transport = transport
-        print("Client Handler: Connection from {}".format(self.peername))
+        logging.info("Connection from {}".format(self.peername))
 
     def connection_lost(self, exc):
         ''' Callback when the client disconnects '''
-        print("Client Handler: {} disconnected".format(self.peername))
+        logging.info("{} disconnected".format(self.peername))
         self.end_conversation()
         self.transport.close()
         self.client_handler.remove_client(self)
 
-    def data_received(self, data):
+    def data_received(self, serial_data):
         ''' Callback when the server gets data '''
-        message = data.decode()
-        self.buffer.append(message)
-        print("Client Handler: Received \"{}\"".format(message))
+        data = json.loads(serial_data.decode('utf-8'))
+        logging.info("Received \"{}\"".format(data))
+        self.buffer.append(data)
 
     def data_available(self):
         ''' Returns whether the read buffer has data '''
@@ -82,9 +86,10 @@ class VAServerProtocol(asyncio.Protocol):
 
         return self.buffer.popleft()
 
-    def write(self, message):
+    def write(self, data):
         ''' Write data to the client '''
-        self.transport.write(message.encode("utf-8"))
+        serial_data = json.dumps(data).encode('utf-8')
+        self.transport.write(serial_data)
 
     @asyncio.coroutine
     async def conversation_handler(self):
@@ -98,10 +103,11 @@ class VAServerProtocol(asyncio.Protocol):
             #     conversation = Conversation(self, "i_start")
 
             conversation = Conversation(self)
-            while conversation.ongoing:
+            while conversation.ongoing and loop.is_running():
 
                 # await asyncio.sleep(0)
-                await conversation.converse()
+                intent = await conversation.converse()
+
 
             conversation.end()
 

@@ -2,6 +2,7 @@
 
 import asyncio
 import sys
+import logging
 import argparse
 
 from client_communication import VAClientHandler
@@ -18,11 +19,11 @@ class VirtualAssistant(object):
         try:
             self.loop.run_forever()
         except KeyboardInterrupt:
-            pass
-
-        # Close the servers
-        client_handler.close()
-        module_handler.close()
+            logging.info("Shutting down...")
+            # Close the servers
+            self.client_handler.close()
+            self.module_handler.close()
+            self.loop.stop()
 
         if sys.version_info[1] >= 6:
             self.loop.run_until_complete(self.loop.shutdown_asyncgens())
@@ -30,12 +31,19 @@ class VirtualAssistant(object):
 
 
 if __name__ == "__main__":
+    FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(pathname)s: %(message)s'
+    logging.basicConfig(
+        filename='debug.log',
+        level=logging.DEBUG,
+        format=FORMAT,
+        )
+
     parser = argparse.ArgumentParser(
         description='Start the Virtual Assistant Core.')
     parser.add_argument('--port', type=int, default=55801)
-    # parser.add_argument('-logfn', type=str, default="/dev/null")
-    # parser.add_argument('--input-source-index', type=int, default=0)
 
     args = parser.parse_args()
 
     VA = VirtualAssistant(args.port)
+
+    logging.shutdown()
