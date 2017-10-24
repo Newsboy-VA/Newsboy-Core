@@ -33,7 +33,6 @@ class TextIO(BaseIO):
                 self.line = ''
                 print(end="\n\r")  # TODO: Make this heppen elsewhere
 
-
     def write(self, message):
         ''' Write data to the terminal '''
         print(message + '\r')

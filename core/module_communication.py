@@ -3,99 +3,28 @@
 import asyncio
 import logging
 
-import collections
-import json
+import sys
+sys.path.append('base_classes')
+from protocol_base import ServerProtocolBase
+from server_base import ServerBase
 
-from datatypes import NamedObjectList
 
-
-class VAModuleHandler(object):
+class VAModuleHandler(ServerBase):
     def __init__(self, core, port):
-        self.core = core
-        self.available_modules = NamedObjectList()
-        self.loop = asyncio.get_event_loop()
-
-        # Each module connection will create a new protocol instance
-        coro = self.loop.create_server(lambda: VAModuleProtocol(self),
-                                       host='localhost',
-                                       port=port)
-        self.server = self.loop.run_until_complete(coro)
+        super().__init__(core, port, VAModuleHandlerProtocol)
 
         logging.info("Listening for modules on {}".format(self.server.sockets[0].getsockname()))
 
-    def add_module(self, protocol):
-        ''' Adds a module to the module list '''
-        self.available_modules.append(protocol)
-
-    def remove_module(self, protocol):
-        ''' Remove a module from the module list '''
-        self.available_modules.remove(protocol)
-
-    def send_request(self, client_id, module_name, intent):
+    def send_request(self, client_name, module_name, intent):
         ''' Sends a request to the given module '''
-        module = self.available_modules.get(module_name)
-        if module.name is not None:
-                data = {'HEADER': 'REQUEST', 'MESSAGE': {
-                    'ID': client_id,
-                    'ACTION': intent
-                }}
-                module.write(data)
-
-    def close(self):
-        ''' Closes the server down '''
-        self.server.close()
-        self.loop.run_until_complete(self.server.wait_closed())
-
-
-class VAModuleProtocol(asyncio.Protocol):
-    def __init__(self, module_handler):
-        self.module_handler = module_handler
-        self.buffer = collections.deque(maxlen=20)
-
-    def connection_made(self, transport):
-        ''' Callback when the module connects '''
-        self.sockname = transport.get_extra_info('sockname')
-        self.peername = transport.get_extra_info('peername')
-        self.transport = transport
-        logging.info("Connection from {}".format(self.peername))
-        self.module_handler.add_module(self)
-
-    def connection_lost(self, exc):
-        ''' Callback when the module disconnects '''
-        logging.info("{} disconnected".format(self.peername))
-        self.transport.close()
-        self.module_handler.remove_module(self)
-
-    def data_received(self, serial_data):
-        ''' Callback when the server gets data '''
-        data = json.loads(serial_data.decode('utf-8'))
-        logging.info("Received \"{}\"".format(data))
-        # if data['HEADER'] == 'GET':
-            # self.write({'HEADER': '', data['MESSAGE']: getattr(self, data['MESSAGE'])})
-        if data['HEADER'] == 'SET':
-            setattr(self, *data['MESSAGE'])
+        module = self.connections.get(module_name)
+        if module is None:
+            logging.warning("No module named \"{}\"".format(module_name))
         else:
-            self.buffer.append(data)
+            module.write_command('request', [client_name, intent])
 
-    def data_available(self):
-        ''' Returns whether the read buffer has data '''
-        return len(self.buffer) != 0
 
-    @asyncio.coroutine
-    async def read(self, blocking=True):
-        ''' Read data from the module via a circular buffer '''
-        loop = asyncio.get_event_loop()
-        empty_buffer = True
-        while empty_buffer and loop.is_running():
-            await asyncio.sleep(0)
-            empty_buffer = not self.data_available()
-            if not blocking:
-                break
-        if empty_buffer:
-            return None
-        return self.buffer.popleft()
-
-    def write(self, data):
-        ''' Write data to the module '''
-        serial_data = json.dumps(data).encode('utf-8')
-        self.transport.write(serial_data)
+class VAModuleHandlerProtocol(ServerProtocolBase):
+    async def send_to_client(self, client_id, message):
+        ''' Send a message to the client '''
+        self.name = name

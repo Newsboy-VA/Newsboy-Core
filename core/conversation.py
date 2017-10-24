@@ -1,12 +1,16 @@
-import copy
-from nlu import NLU
+
+
 import asyncio
+import copy
+import collections
+
+from nlu import NLU
 
 
 nlu = NLU()
 
 class Context(object):
-    """docstring for Context."""
+    ''' Saves the context of the conversation '''
     def __init__(self):
         super(Context, self).__init__()
         self.intents_list = []
@@ -54,13 +58,14 @@ class Context(object):
 
 
 class Conversation(object):
-    """docstring for Conversation."""
+    '''  '''
     def __init__(self, client):
         # Who the conversation is with
         self.client = client
         self.my_turn = None
         self.ongoing = False
         self.context = Context()
+        self.client_speech = collections.deque(maxlen=20)
 
         self.start()
 
@@ -70,14 +75,16 @@ class Conversation(object):
             self.speak_to_client(phrase)
 
     def speak_to_client(self, phrase):
-        self.client.write(phrase)
+        self.client.write_command('display', [phrase])
 
-    @asyncio.coroutine
     async def listen_to_client(self):
-        return await self.client.read()
+        loop = asyncio.get_event_loop()
+        while len(self.client_speech) == 0 and loop.is_running():
+            await asyncio.sleep(0)
 
-    @asyncio.coroutine
-    async def converse(self, phrase = None):
+        return self.client_speech.popleft()
+
+    async def converse(self, phrase=None):
         # if self.my_turn:
         #     self.ask_client(adjacency)
         #
@@ -100,7 +107,6 @@ class Conversation(object):
 
         # UNDERSTAND (expect the respective adjacency pair back)
 
-    @asyncio.coroutine
     async def reply(self, phrase):
         # Acknowledge
         # self.speak_to_client("You said '" + phrase + "'\n")
@@ -151,7 +157,7 @@ class Conversation(object):
 #
 # """
 #     Converstions have a:
-#     - begining
+#     - beginning
 #     - end
 #
 #     -Grice’s maxims,  the speakers and listeners support and evaluate each other using known building blocks: adjacency pairs and turns

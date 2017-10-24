@@ -63,9 +63,10 @@ def load_client(args):
     loop = asyncio.get_event_loop()
     client_args = [
         './client/client.py',
-        '--input-type='+args.input_type,
+        '--client-name='+args.client_name,
         '--host='+args.host,
         '--port='+str(args.port),
+        '--input-type='+args.input_type,
     ]
     if args.continuous:
         client_args.append('--continuous')
@@ -110,6 +111,7 @@ def add_main_arguments(parser):
     parser.set_defaults(
         func=load_all,
         host='localhost',
+        client_name="main",
         continuous=True,
         all_modules=True,
         )
@@ -137,11 +139,10 @@ def add_client_arguments(subparsers):
         description="Start a client by itself",
         # help="",
         )
-    # NOTE: The following may be different if you are also starting the core.
     client_parser.add_argument(
-        '-I', '--input_type',
-        choices=['text', 'sphinx', 'google'], default=DEFAULT_CLIENT_INPUT,
-        help="Set how you want to interact with the assistant",
+        '--client-name',
+        type=str, default='',
+        help="Set the name of the client",
         )
     client_parser.add_argument(
         '-H', '--host',
@@ -152,6 +153,12 @@ def add_client_arguments(subparsers):
         '-P', '--port',
         type=int, default=DEFAULT_CLIENT_PORT,
         help="Set the port of the client handler",
+        )
+        # NOTE: The following may be different if you are also starting the core.
+    client_parser.add_argument(
+        '-I', '--input_type',
+        choices=['text', 'sphinx', 'google'], default=DEFAULT_CLIENT_INPUT,
+        help="Set how you want to interact with the assistant",
         )
     # NOTE: The following default is 'True' as opposed to the client.py default
     #       which is 'False'.
