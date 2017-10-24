@@ -18,7 +18,7 @@ class VAModuleBase(object):
         self.path = module_path
         self.name = os.path.split(self.path)[-1]
 
-        FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(pathname)s: %(message)s'
+        FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
         logging.basicConfig(
             filename='debug.log',
             level=logging.DEBUG,

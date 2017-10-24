@@ -31,7 +31,7 @@ class VirtualAssistant(object):
 
 
 if __name__ == "__main__":
-    FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(pathname)s: %(message)s'
+    FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
     logging.basicConfig(
         filename='debug.log',
         level=logging.DEBUG,

@@ -15,13 +15,13 @@ class VAClientHandler(ServerBase):
     def __init__(self, core, port):
         super().__init__(core, port, VAClientHandlerProtocol)
 
-        logging.info("Listening for clients on {}".format(self.server.sockets[0].getsockname()))
+        logging.info("Server: Listening for clients on {}".format(self.server.sockets[0].getsockname()))
 
     def send_to_client(self, client_name, message):
         ''' Sends a message to the given client '''
         client = self.connections.get(client_name)
         if client is None:
-            logging.warning("No client named \"{}\"".format(client_name))
+            logging.warning("Server: No client named \"{}\"".format(client_name))
         else:
             client.write_command('display', [message])
 

@@ -29,7 +29,7 @@ class ProtocolBase(asyncio.Protocol):
     def data_received(self, serial_data):
         ''' Callback when the socket gets data '''
         data = json.loads(serial_data.decode('utf-8'))
-        logging.debug("Received \"{}\"".format(data))
+        logging.debug("{}: Received \"{}\"".format(self.name, data))
         self.buffer.append(data)
 
     def data_available(self):
@@ -57,7 +57,7 @@ class ProtocolBase(asyncio.Protocol):
 
     def write(self, data):
         ''' Write data to the peer '''
-        logging.debug("Sending \"{}\"".format(data))
+        logging.debug("{}: Sending \"{}\"".format(self.name, data))
         serial_data = json.dumps(data).encode('utf-8')
         self.transport.write(serial_data)
 
@@ -74,12 +74,12 @@ class ClientProtocolBase(ProtocolBase):
     def connection_made(self, transport):
         ''' Callback when the module connects '''
         super().connection_made(transport)
-        logging.info("Connected to {}".format(self.peername))
+        logging.info("{}: Connected to {}".format(self.name, self.peername))
         self.write_command('set_name', [self.name])
 
     def connection_lost(self, exc):
         ''' Callback when the module disconnects '''
-        logging.info("The server has disappeared!")
+        logging.info("{}: The server has disappeared!".format(self.name))
         super().connection_lost(exc)
         self.loop.stop()
 
@@ -88,12 +88,12 @@ class ServerProtocolBase(ProtocolBase):
     def connection_made(self, transport):
         ''' Callback when the module connects '''
         super().connection_made(transport)
-        logging.info("Connection from {}".format(self.peername))
+        logging.info("Server: Connection from {}".format(self.peername))
         self.protocol_handler.add_connection(self)
 
     def connection_lost(self, exc):
         ''' Callback when the module disconnects '''
-        logging.info("{} disconnected".format(self.peername))
+        logging.info("Server: {} disconnected".format(self.peername))
         super().connection_lost(exc)
         self.protocol_handler.remove_connection(self)
 

@@ -13,13 +13,13 @@ class VAModuleHandler(ServerBase):
     def __init__(self, core, port):
         super().__init__(core, port, VAModuleHandlerProtocol)
 
-        logging.info("Listening for modules on {}".format(self.server.sockets[0].getsockname()))
+        logging.info("Server: Listening for modules on {}".format(self.server.sockets[0].getsockname()))
 
     def send_request(self, client_name, module_name, intent):
         ''' Sends a request to the given module '''
         module = self.connections.get(module_name)
         if module is None:
-            logging.warning("No module named \"{}\"".format(module_name))
+            logging.warning("Server: No module named \"{}\"".format(module_name))
         else:
             module.write_command('request', [client_name, intent])
 
