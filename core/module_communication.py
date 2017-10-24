@@ -25,6 +25,12 @@ class VAModuleHandler(ServerBase):
 
 
 class VAModuleHandlerProtocol(ServerProtocolBase):
-    async def send_to_client(self, client_id, message):
-        ''' Send a message to the client '''
-        self.name = name
+    async def response(self, client_name, message):
+        ''' Acknowledges the request has been made. More may be to come. '''
+        self.protocol_handler.core.client_handler.send_to_client(
+            client_name, message)
+
+    async def send_to_client(self, client_name, message, priority):
+        ''' Sends a message to the given client '''
+        self.protocol_handler.core.client_handler.send_to_client(
+            client_name, message, priority)

@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import collections
 
 import sys
 sys.path.append('base_classes')
@@ -17,24 +18,34 @@ class VAClientHandler(ServerBase):
 
         logging.info("Server: Listening for clients on {}".format(self.server.sockets[0].getsockname()))
 
-    def send_to_client(self, client_name, message):
+    def send_to_client(self, client_name, message, priority=2):
         ''' Sends a message to the given client '''
         client = self.connections.get(client_name)
         if client is None:
             logging.warning("Server: No client named \"{}\"".format(client_name))
         else:
-            client.write_command('display', [message])
+            if priority == 2:
+                client.write_command('display', [message])
+            elif priority == 1:
+                client.med_priority_queue.append(message)
+            elif priority == 0:
+                client.low_priority_queue.append(message)
 
 
 class VAClientHandlerProtocol(ServerProtocolBase):
     def __init__(self, protocol_handler):
         super().__init__(protocol_handler)
-        self.conversation = Conversation(self)
+        # self.conversation = Conversation(self)
+        self.input_queue = collections.deque(maxlen=20)
+
+        self.output_queue_med_priority = collections.deque(maxlen=20)
+        self.output_queue_low_priority = collections.deque(maxlen=20)
+
         self.loop.create_task(self.conversation_handler())
 
     async def converse(self, phrase):
         ''' Adds a phrase to the conversation '''
-        self.conversation.client_speech.append(phrase)
+        self.input_queue.append(phrase)
 
     async def conversation_handler(self):
         ''' Handles the conversation between the virtual assistant and user '''
@@ -46,14 +57,14 @@ class VAClientHandlerProtocol(ServerProtocolBase):
             # elif user identified:
             #     conversation = Conversation(self, "i_start")
 
-            while self.conversation.ongoing and self.loop.is_running():
-                intent = await self.conversation.converse()
+            conversation = Conversation(self)
+            while conversation.ongoing and self.loop.is_running():
+                intent = await conversation.converse()
 
             self.protocol_handler.core.module_handler.send_request(
                 self.name, 'datetime', intent)
             # end_conversation = True
 
-            self.conversation = Conversation(self)
             # Wait for module ack
 
             # Tell client it's done

@@ -1,8 +1,8 @@
 
 
 import asyncio
+import logging
 import copy
-import collections
 
 from nlu import NLU
 
@@ -32,7 +32,7 @@ class Context(object):
 
     def is_in_context(self, new_intent):
         for intent in self.intents_list:
-            if intent.name == new_intent.name:
+            if intent['function'] == new_intent['function']:
                 return True
         return False
 
@@ -49,7 +49,7 @@ class Context(object):
             # self.speak_to_client("Added new intent {} to the context".format(new_intent.name))
         else:
             for intent in self.intents_list:
-                if intent.name == new_intent.name:
+                if intent['function'] == new_intent['function']:
                     intent['arguments'].update({k:v for k,v in new_intent['arguments'].items() if v is not None})
                     # self.speak_to_client("Updating existing intent, {}. Arguments now: {}".format(intent.name, intent.argument_dict))
 
@@ -65,7 +65,6 @@ class Conversation(object):
         self.my_turn = None
         self.ongoing = False
         self.context = Context()
-        self.client_speech = collections.deque(maxlen=20)
 
         self.start()
 
@@ -79,10 +78,10 @@ class Conversation(object):
 
     async def listen_to_client(self):
         loop = asyncio.get_event_loop()
-        while len(self.client_speech) == 0 and loop.is_running():
+        while len(self.client.input_queue) == 0 and loop.is_running():
             await asyncio.sleep(0)
 
-        return self.client_speech.popleft()
+        return self.client.input_queue.popleft()
 
     async def converse(self, phrase=None):
         # if self.my_turn:
@@ -121,11 +120,12 @@ class Conversation(object):
         if not self.context.is_empty():
             self.context.update_arguments(phrase)
             if self.context.have_full_intent():
-                self.speak_to_client(" All arguments found for the {} intent. Calling function...".format(self.context.get_first_full_intent()['function']))
+                intent = self.context.get_first_full_intent()
+                logging.info("All arguments found for the {} intent.".format(intent['function']))
                 self.ongoing = False
-                return self.context.get_first_full_intent()
+                return intent
             else:
-                await self.converse("What " + [entity for entity,value in self.context.intents_list[0]['arguments'].items() if value is None ][0] + " ? ")
+                return await self.converse("What " + [entity for entity,value in self.context.intents_list[0]['arguments'].items() if value is None ][0] + " ? ")
 
 
 

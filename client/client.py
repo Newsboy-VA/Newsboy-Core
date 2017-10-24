@@ -65,13 +65,16 @@ class VAClient(object):
 
 class VAClientProtocol(ClientProtocolBase):
     def connection_made(self, transport):
-        self.name = transport.get_extra_info('sockname')
+         # By default, the client name is a list of it's connection. That way
+         # it always has a unique identifier, and a list so it can be encoded.
+        self.name = list(transport.get_extra_info('sockname'))
         super().connection_made(transport)
 
     async def display(self, message, force_method=None):
         ''' Display text to the user using the preferred method '''
         #TODO: Make force_method actually do something
-        self.protocol_handler.io_handle.write(message)
+        if message is not None:
+            self.protocol_handler.io_handle.write(message)
 
 
 if __name__ == "__main__":

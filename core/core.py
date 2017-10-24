@@ -34,6 +34,7 @@ if __name__ == "__main__":
     FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
     logging.basicConfig(
         filename='debug.log',
+        filemode='w',
         level=logging.DEBUG,
         format=FORMAT,
         )

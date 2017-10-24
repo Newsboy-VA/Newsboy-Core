@@ -62,6 +62,11 @@ class VAModuleBase(object):
         ''' Perform all the background tasks that need to be done '''
         pass
 
+    def send_to_client(self, client_name, message, priority):
+        ''' Sends a message to the given client '''
+        self.protocol.write_command(
+            'send_to_client', [client_name, message, priority])
+
     def update_available_actions(self):
         ''' Register all actions from the json file '''
 
@@ -112,14 +117,15 @@ class Action(object):
 
     def assert_entities(self):
         ''' Ensure the action arguments match the json entities '''
-        action_args = sorted(self.argument_dict.keys())
-        json_args = sorted(inspect.getargspec(self.function)[0])
+        json_args = sorted(self.argument_dict.keys())
+        action_args = sorted(inspect.getargspec(self.function)[0])
+        action_args.remove('self')
 
         if action_args != json_args:
             raise AssertionError("Arguments for {} are {} instead of {}".format(
-                self.name, json_args, action_args))
+                self.name, action_args, json_args))
 
-    def assert_parameters(self, **kwargs):
+    def assert_arguments(self, **kwargs):
         ''' Ensure the given parameters match their corresponding entities '''
         # action_args = sorted(self.arguments.keys())
         # TODO: This function
@@ -135,4 +141,5 @@ class VAModuleProtocol(ClientProtocolBase):
         ''' Runs the given action '''
         available_actions = self.protocol_handler.available_actions
         action = available_actions[action_dict['function']]
-        action(**action_dict['arguments'])
+        response = action(**action_dict['arguments'])
+        self.write_command('response', [client_name, response])
