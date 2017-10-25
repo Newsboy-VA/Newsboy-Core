@@ -20,8 +20,8 @@ class VAModuleBase(object):
 
         FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
         logging.basicConfig(
-            filename='debug.log',
-            level=logging.DEBUG,
+            filename='info.log',
+            level=logging.INFO,
             format=FORMAT,
             )
 

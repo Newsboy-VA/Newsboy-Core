@@ -14,11 +14,10 @@ class VirtualAssistant(object):
     def __init__(self):
         FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
         logging.basicConfig(
-            filename='debug.log',
-            filemode='w',
-            level=logging.DEBUG,
+            filename='info.log',
+            level=logging.INFO,
             format=FORMAT,
-        )
+            )
 
         parser = argparse.ArgumentParser(
             description='Start the Virtual Assistant Core.')
