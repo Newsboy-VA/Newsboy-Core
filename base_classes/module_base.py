@@ -141,6 +141,10 @@ class VAModuleProtocol(ClientProtocolBase):
     async def request(self, client_name, action_dict):
         ''' Runs the given action '''
         available_actions = self.protocol_handler.available_actions
-        action = available_actions[action_dict['function']]
-        response = action(**action_dict['arguments'])
-        self.write_command('response', [client_name, response])
+        if action_dict['function'] not in available_actions:
+            logging.error("{}: Module does not contain \"{}\"".format(
+                self.name, action_dict['function']))
+        else:
+            action = available_actions[action_dict['function']]
+            response = action(**action_dict['arguments'])
+            self.write_command('response', [client_name, response])

@@ -15,13 +15,12 @@ from conversation import Conversation
 class VAClientHandler(ServerBase):
     def __init__(self, core, port):
         super().__init__(core, port, VAClientHandlerProtocol)
-        logging.info("Server: Listening for clients on {}".format(self.server.sockets[0].getsockname()))
 
     def send_to_client(self, client_name, message, priority=2):
         ''' Sends a message to the given client '''
         client = self.connections.get(client_name)
         if client is None:
-            logging.warning("Server: No client named \"{}\"".format(client_name))
+            logging.error("Server: No client named \"{}\"".format(client_name))
         else:
             if priority == 2:
                 client.write_command('display', [message])

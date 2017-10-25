@@ -52,8 +52,12 @@ class ProtocolBase(asyncio.Protocol):
         ''' Continuously checks the buffer and deals with the data '''
         while self.loop.is_running():
             data = await self.read()
-            coro = getattr(self, data[0])
-            await coro(*data[1])
+            try:
+                coro = getattr(self, data[0])
+                await coro(*data[1])
+            except AttributeError:
+                logging.error("{}: No command \"{}\"".format(
+                    self.name, data[0]))
 
     def write(self, data):
         ''' Write data to the peer '''
