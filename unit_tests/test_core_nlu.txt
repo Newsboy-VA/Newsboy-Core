@@ -1,0 +1,24 @@
+# NLU Unit Tests
+
+>>> from core.nlu import NLU
+>>> nlu = NLU()
+
+>>> nlu.find_intents_in_phrase("Hello")[0]['function']
+'greeting'
+>>> nlu.find_intents_in_phrase("What's the time")[0]['function']
+'get_current_time'
+>>> nlu.find_intents_in_phrase("How are you today?")[0]['function']
+'check_state'
+>>> nlu.find_intents_in_phrase("Can you tell me the time?")[0]['function']
+'get_current_time'
+>>> nlu.find_intents_in_phrase("start a timer for ten minutes")[0]['function']
+'set_timer'
+>>> nlu.find_intents_in_phrase("create timer for ten")[0]['function']
+'set_timer'
+
+
+
+>>> sorted(nlu.find_args_for_intent('set_timer', "create timer for ten minutes").items())
+[('number', '10'), ('time_unit', 'minutes'), ('timer_type', 'countdown')]
+>>> sorted(nlu.find_args_for_intent('set_timer', "set timer for 20 s").items())
+[('number', '20'), ('time_unit', 'seconds'), ('timer_type', 'countdown')]
