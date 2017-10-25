@@ -12,7 +12,6 @@ from server_base import ServerBase
 class VAModuleHandler(ServerBase):
     def __init__(self, core, port):
         super().__init__(core, port, VAModuleHandlerProtocol)
-
         logging.info("Server: Listening for modules on {}".format(self.server.sockets[0].getsockname()))
 
     def send_request(self, client_name, module_name, intent):

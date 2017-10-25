@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-import asyncio
-import sys
-import os
 import argparse
+import subprocess
+import os
+import time
 
 
 DEFAULT_CLIENT_PORT = 55801
@@ -24,58 +24,61 @@ def main():
     add_modules_arguments(subparsers)
 
     args = parser.parse_args()
-
-    loop = asyncio.get_event_loop()
-
-    # Load the modules into asyncio tasks
-    args.func(args)
+    processes = args.func(args)
 
     try:
-        loop.run_forever()
+        for process in processes:
+            process.wait()
     except KeyboardInterrupt:
-        loop.stop()
-
-    if sys.version_info[1] >= 6:
-        loop.run_until_complete(loop.shutdown_asyncgens())
-    loop.close()
+        for process in processes:
+            process.terminate()
 
 
 def load_all(args):
     ''' Load everything '''
-    load_core(args)
-    load_client(args)
-    load_modules(args)
+    processes = []
+    processes.extend(load_core(args))
+    time.sleep(0.1)
+    processes.extend(load_modules(args))
+    processes.extend(load_client(args))
+
+    return processes
 
 
 def load_core(args):
     ''' Load the virtual assistant core '''
     print("Running core")
-    loop = asyncio.get_event_loop()
-    loop.create_task(asyncio.create_subprocess_exec(
+    processes = []
+    processes.append(subprocess.Popen([
         './core/core.py',
-        '--port='+str(args.port)
-        ))
+        '--port='+str(args.client_port)
+        ]))
+
+    return processes
 
 
 def load_client(args):
     ''' Load an interface with the core '''
     print("Running client")
-    loop = asyncio.get_event_loop()
+    processes = []
     client_args = [
         './client/client.py',
         '--client-name='+args.client_name,
         '--host='+args.host,
-        '--port='+str(args.port),
+        '--port='+str(args.client_port),
         '--input-type='+args.input_type,
     ]
     if args.continuous:
         client_args.append('--continuous')
-    loop.create_task(asyncio.create_subprocess_exec(*client_args))
+    processes.append(subprocess.Popen(client_args))
+
+    return processes
 
 
 def load_modules(args):
     ''' Load one or more modules by themselves '''
-    loop = asyncio.get_event_loop()
+    processes = []
+
     modules_dir = 'modules'
     for listing in os.listdir(modules_dir):
         module_dir = os.path.join(modules_dir, listing)
@@ -85,22 +88,29 @@ def load_modules(args):
             module_name = os.path.split(module_dir)[-1]
             if os.path.isfile(module_main):
                 print("Running {} module".format(module_name))
-                # print([module_main, args.host, args.port])
-                loop.create_task(asyncio.create_subprocess_exec(
+                # print([module_main, args.host, args.module_port])
+                processes.append(subprocess.Popen([
                     module_main,
                     '--host='+args.host,
-                    '--port='+str(args.port)
-                    ))
+                    '--port='+str(args.module_port)
+                    ]))
             else:
                 print("Unable to run {} module".format(module_name))
+
+    return processes
 
 
 def add_main_arguments(parser):
     ''' Launch the arguments of the main program '''
     parser.add_argument(
-        '-P', '--port',
+        '-P', '--client-port',
         type=int, default=DEFAULT_CLIENT_PORT,
         help="Set the port of the client handler",
+        )
+    parser.add_argument(
+        '-P', '--module-port',
+        type=int, default=DEFAULT_MODULE_PORT,
+        help="Set the port of the module handler",
         )
     # NOTE: The following may be different if you are starting just a client.
     parser.add_argument(
@@ -125,9 +135,14 @@ def add_core_arguments(subparsers):
         # help="",
         )
     core_parser.add_argument(
-        '-P', '--port',
+        '-P', '--client-port',
         type=int, default=DEFAULT_CLIENT_PORT,
-        help="Set the port",
+        help="Set the port of the client handler",
+        )
+    core_parser.add_argument(
+        '-M', '--module-port',
+        type=int, default=DEFAULT_MODULE_PORT,
+        help="Set the port of the module handler",
         )
     core_parser.set_defaults(func=load_core)
 
@@ -150,7 +165,7 @@ def add_client_arguments(subparsers):
         help="Set the IP of the assistant",
         )
     client_parser.add_argument(
-        '-P', '--port',
+        '-P', '--client-port',
         type=int, default=DEFAULT_CLIENT_PORT,
         help="Set the port of the client handler",
         )
@@ -194,7 +209,7 @@ def add_modules_arguments(subparsers):
         help="Set the IP of the assistant",
         )
     module_parser.add_argument(
-        '-P', '--port',
+        '-M', '--module-port',
         type=int, default=DEFAULT_MODULE_PORT,
         help="Set the port of the module handler",
         )

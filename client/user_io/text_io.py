@@ -31,7 +31,7 @@ class TextIO(BaseIO):
             else:
                 self.buffer.append(self.line)
                 self.line = ''
-                print(end="\n\r")  # TODO: Make this heppen elsewhere
+                print(end="\n\r")  # TODO: Make this happen elsewhere
 
     def write(self, message):
         ''' Write data to the terminal '''

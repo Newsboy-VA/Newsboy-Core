@@ -32,31 +32,32 @@ class VAModuleBase(object):
 
         args = parser.parse_args()
 
-        self.host = args.host
-        self.port = args.port
-
         self.available_actions = dict()
         self.update_available_actions()
 
-        # [print(k, '|', v) for k, v in self.available_actions.items()]
-
         self.loop = asyncio.get_event_loop()
-
-    def listen(self):
-        ''' Start a connection with the virtual assistant '''
         coro = self.loop.create_connection(lambda: VAModuleProtocol(self),
-                                           host=self.host,
-                                           port=self.port)
+                                           host=args.host,
+                                           port=args.port)
         transport, self.protocol = self.loop.run_until_complete(coro)
 
-        try:
-            self.loop.run_forever()
-        except KeyboardInterrupt:
-            pass
+    def __enter__(self):
+        ''' Start a connection with the virtual assistant '''
+        self.loop.run_forever()
+        return self
 
+    def __exit__(self, type, value, traceback):
         if sys.version_info[1] >= 6:
             self.loop.run_until_complete(self.loop.shutdown_asyncgens())
         self.loop.close()
+
+        logging.shutdown()
+
+        if isinstance(value, KeyboardInterrupt):
+            return True
+        elif isinstance(value, ConnectionRefusedError):  # Doesn't seem to work
+            print("No virtual assistant found")
+            return True
 
     def background_tasks(self):
         ''' Perform all the background tasks that need to be done '''

@@ -18,8 +18,6 @@ class VAModule(VAModuleBase):
 
         super().__init__(module_path)
 
-        self.listen()
-
     def background_tasks(self):
         ''' Perform all the background tasks that need to be done '''
         pass
@@ -68,7 +66,5 @@ class VAModule(VAModuleBase):
 
 
 if __name__ == "__main__":
-
-    module = VAModule()
-
-    logging.shutdown()
+    with VAModule() as module:
+        pass

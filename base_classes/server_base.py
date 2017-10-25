@@ -21,10 +21,12 @@ class ServerBase(object):
     def add_connection(self, protocol):
         ''' Adds a connection to the connection list '''
         self.connections.append(protocol)
+        logging.info("1 " + self.__class__.__name__ + str(self.connections))
 
     def remove_connection(self, protocol):
         ''' Remove a connection from the connection list '''
         self.connections.remove(protocol)
+        logging.info("1 " + self.__name__ + str(self.connections))
 
     def close(self):
         ''' Closes the server down '''

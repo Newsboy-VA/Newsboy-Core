@@ -17,34 +17,59 @@ from protocol_base import ClientProtocolBase
 
 class VAClient(object):
     ''' A client object which talks to the virtual assistant '''
-    def __init__(self, client_name, host, port, input_type):
-        self.name = client_name
-        self.host = host
-        self.port = port
-        self.input_type = input_type
-        if input_type == 'text':
+    def __init__(self):
+        FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
+        logging.basicConfig(
+            filename='debug.log',
+            level=logging.DEBUG,
+            format=FORMAT,
+            )
+
+        parser = argparse.ArgumentParser(
+            description='Start a client to connect to the Virtual Assistant.')
+        parser.add_argument('--client-name', type=str, default="")
+        parser.add_argument('--host', type=str, default='localhost')
+        parser.add_argument('--port', type=int, default=55801)
+        parser.add_argument('--input-type', type=str, default='text')
+        parser.add_argument('--continuous', default=False, action='store_true')
+
+        args = parser.parse_args()
+
+        self.name = args.client_name
+        self.input_type = args.input_type
+        if self.input_type == 'text':
             self.io_handle = user_io.TextIO()
-        elif input_type == 'speech':
+        elif self.input_type == 'speech':
             self.io_handle = user_io.SpeechIO()
 
         self.loop = asyncio.get_event_loop()
         coro = self.loop.create_connection(lambda: VAClientProtocol(self),
-                                           host=host,
-                                           port=port)
+                                           host=args.host,
+                                           port=args.port)
         self.transport, self.protocol = self.loop.run_until_complete(coro)
 
         self.loop.create_task(self.user_to_assistant())
-        # self.loop.create_task(self.assistant_to_user())
-        try:
-            self.loop.run_forever()
-        except KeyboardInterrupt:
-            pass
 
+    def __enter__(self):
+        self.loop.run_forever()
+        return self
+
+    def __exit__(self, type, value, traceback):
         if sys.version_info[1] >= 6:
             self.loop.run_until_complete(self.loop.shutdown_asyncgens())
         self.loop.close()
+        if self.input_type == 'text':
+            curses.echo()
+            curses.endwin()
 
-    @asyncio.coroutine
+        logging.shutdown()
+
+        if isinstance(value, KeyboardInterrupt):
+            return True
+        elif isinstance(value, ConnectionRefusedError):  # Doesn't seem to work
+            print("No virtual assistant found")
+            return True
+
     async def user_to_assistant(self):
         ''' Forwards data from the user to the VA '''
         while self.loop.is_running():
@@ -52,15 +77,6 @@ class VAClient(object):
             message = await self.io_handle.read()
             if message is not None:
                 self.protocol.write_command('converse', [message])
-
-    # @asyncio.coroutine
-    # async def assistant_to_user(self):
-    #     ''' Forwards data from the VA to the user '''
-    #     while self.loop.is_running():
-    #         await asyncio.sleep(0)
-    #         message = await self.protocol.read()
-    #         if message is not None:
-    #             self.io_handle.write(message)
 
 
 class VAClientProtocol(ClientProtocolBase):
@@ -78,29 +94,5 @@ class VAClientProtocol(ClientProtocolBase):
 
 
 if __name__ == "__main__":
-    FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
-    logging.basicConfig(
-        filename='debug.log',
-        level=logging.DEBUG,
-        format=FORMAT,
-        )
-
-    parser = argparse.ArgumentParser(
-        description='Start a client to connect to the Virtual Assistant.')
-    parser.add_argument('--client-name', type=str, default="")
-    parser.add_argument('--host', type=str, default='localhost')
-    parser.add_argument('--port', type=int, default=55801)
-    parser.add_argument('--input-type', type=str, default='text')
-    parser.add_argument('--continuous', default=False, action='store_true')
-
-    args = parser.parse_args()
-    try:
-        client = VAClient(args.client_name, args.host, args.port, args.input_type)
-    except Exception as e:
-        print(e)
-
-    if args.input_type == 'text':
-        curses.echo()
-        curses.endwin()
-
-    logging.shutdown()
+    with VAClient() as client:
+        pass
