@@ -92,7 +92,7 @@ def load_modules(args):
                     # The main file isn't executable
                     print("Making {} executable".format(module_main))
                     curr_mode = os.stat(module_main).st_mode
-                    os.chmod(module_main, curr_mode | stat.S_IEXEC)
+                    os.chmod(module_main, curr_mode | 0o111)  #stat.S_IEXEC)
                 print("Running {} module".format(module_name))
                 # print([module_main, args.host, args.module_port])
                 processes.append(subprocess.Popen([
