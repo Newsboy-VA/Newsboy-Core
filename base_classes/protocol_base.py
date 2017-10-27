@@ -54,10 +54,11 @@ class ProtocolBase(asyncio.Protocol):
             data = await self.read()
             try:
                 coro = getattr(self, data[0])
-                await coro(*data[1])
             except AttributeError:
                 logging.error("{}: No command \"{}\"".format(
                     self.name, data[0]))
+                return
+            await coro(*data[1])
 
     def write(self, data):
         ''' Write data to the peer '''

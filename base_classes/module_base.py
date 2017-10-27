@@ -63,7 +63,7 @@ class VAModuleBase(object):
         ''' Perform all the background tasks that need to be done '''
         pass
 
-    def send_to_client(self, client_name, message, priority):
+    def send_to_client(self, client_name, message, priority=2):
         ''' Sends a message to the given client '''
         self.protocol.write_command(
             'send_to_client', [client_name, message, priority])
