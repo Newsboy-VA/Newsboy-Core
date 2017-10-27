@@ -1,7 +1,6 @@
 
-import os
-import os.path
-import json
+
+import logging
 import re
 
 import sys
@@ -10,74 +9,56 @@ from action_base import ActionBase
 
 class NLU(object):
     ''' A class for performing basic Natural Language Understanding '''
-    def __init__(self, module_dir="modules"):
-        self.module_dir = module_dir
-        self.available_intent_list = []
-        self.update_available_intent_list()
+    def __init__(self):
+        self.name = "NLU"
+        self.available_intents = list()
 
-    def update_available_intent_list(self):
-        ''' Iterates through modules and finds the intents '''
-        for listing in os.listdir(self.module_dir):
-            module = os.path.join(self.module_dir, listing)
-            if os.path.isdir(module):
-                # print(module)
-                entities_file = open(os.path.join(module, "entities.json"))
-                entities_json = json.load(entities_file)['entities']
-                entities_file.close()
-                # print(entities_json)
-                intents_file = open(os.path.join(module, "actions.json"))
-                intents_json = json.load(intents_file)['actions']
-                intents_file.close()
-                # print(intents_json)
-                for intent_dict in intents_json:
-                    intent_matcher = IntentMatcher(intent_dict)
-                    intent_matcher.generate_regex(entities_json)
-                    self.available_intent_list.append(intent_matcher)
+    def set_available_intents(self, module_intents_dict):
+        ''' Sets the intents/actions that the assistant can perform '''
+        self.available_intents = list()
+        for (module, intent_list) in module_intents_dict.items():
+            for intent_dict in intent_list:
+                intent_matcher = IntentMatcher(intent_dict)
+                intent_matcher.generate_regex()
+                intent_matcher['module'] = module
+                self.available_intents.append(intent_matcher)
+        logging.debug("{}: Available intents now {}".format(
+            self.name, self.available_intents))
 
     def find_intents_in_phrase(self, phrase):
         ''' Returns a list of matching intents '''
         matching_intents = []
-        for intent_matcher in self.available_intent_list:
+        for intent_matcher in self.available_intents:
             if intent_matcher.is_intent_match(phrase):
                 arguments_in_phrase = intent_matcher.find_all_arguments(phrase)
                 intent = Intent({'function': intent_matcher['function'],
+                                 'module': intent_matcher['module'],
                                  'arguments': arguments_in_phrase})
-                matching_intents.append(intent)
 
+                matching_intents.append(intent)
         return matching_intents
 
     def find_args_for_intent(self, intent_function, phrase):
         ''' Returns a dict of arguments found in the phrase to the given intent '''
-        for intent_matcher in self.available_intent_list:
+        for intent_matcher in self.available_intents:
             if intent_matcher['function'] == intent_function:
                 return intent_matcher.find_all_arguments(phrase)
 
 
-class Intent(ActionBase):
-    ''' A class to store intent parameters '''
-    def is_full(self):
-        ''' Returns True if all arguments have a value '''
-        # print(self['arguments'].values())
-        if None in self['arguments'].values():
-            return False
-        return True
-
-
 class IntentMatcher(ActionBase):
     ''' A class to find arguments for a given intent '''
-    def __init__(self, *args):
-        super().__init__(*args)
+    def assert_items(self):
+        super().assert_items()
         assert(isinstance(self['name'], str))
         if 'synonyms' not in self:
             self['synonyms'] = []
         assert(isinstance(self['synonyms'], list))
 
-    def generate_regex(self, entities_json):
+    def generate_regex(self):
         ''' Generates all the regular expressions '''
         # print(self)
         self.intent_regex = self.generate_intent_regex()
-        self.argument_regex_dict = \
-            self.generate_argument_regex_dict(entities_json)
+        self.argument_regex_dict = self.generate_argument_regex_dict()
 
     def generate_intent_regex(self):
         ''' Generates a regular expression which matches the name/synonyms '''
@@ -90,25 +71,24 @@ class IntentMatcher(ActionBase):
 
         return re.compile(pattern, re.IGNORECASE)
 
-    def generate_argument_regex_dict(self, entities_json):
+    def generate_argument_regex_dict(self):
         ''' Generates a dictionary of the form {"argument": regex} '''
 
         argument_dict = dict()
 
-        for intent_arg in self['arguments']:
-            if intent_arg == 'number':
-                argument_dict[intent_arg] = \
+        for (argument, parameters) in self['arguments'].items():
+            if argument == 'number':
+                argument_dict[argument] = \
                     self.generate_number_regex()
-            for entity in entities_json:
-                if entity['name'] == intent_arg:
-                    if isinstance(entity['parameters'], dict):
-                        entity_dict = entity['parameters']
-                    else:
-                        entity_dict = dict()
-                        for parameter in entity['parameters']:
-                            entity_dict[parameter] = [parameter]
-                    argument_dict[intent_arg] = \
-                        self.generate_argument_regex(entity_dict)
+            else:
+                if isinstance(parameters, dict):
+                    entity_dict = parameters
+                else:
+                    entity_dict = dict()
+                    for parameter in parameters:
+                        entity_dict[parameter] = [parameter]
+                argument_dict[argument] = \
+                    self.generate_argument_regex(entity_dict)
 
         return argument_dict
 
@@ -184,15 +164,11 @@ class IntentMatcher(ActionBase):
         return missing_arguments
 
 
-# nlu = NLU("./modules")
-
-if __name__ == "__main__":
-    nlu = NLU()
-    print(nlu.find_intents_in_phrase("Hello"))
-    print(nlu.find_intents_in_phrase("What's the time"))
-    print(nlu.find_intents_in_phrase("How are you today?"))
-    print(nlu.find_intents_in_phrase("Can you tell me the time?"))
-    print(nlu.find_intents_in_phrase("start a timer for ten minutes"))
-    print(nlu.find_intents_in_phrase("create timer for ten"))
-    phrase = "set a timer for 10"
-    # print(nlu.find_intents_in_phrase(phrase)[0].find_args_for_intent(phrase))
+class Intent(ActionBase):
+    ''' A class to store intent parameters '''
+    def is_full(self):
+        ''' Returns True if all arguments have a value '''
+        # print(self['arguments'].values())
+        if None in self['arguments'].values():
+            return False
+        return True

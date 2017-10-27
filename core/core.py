@@ -5,6 +5,7 @@ import sys
 import logging
 import argparse
 
+from nlu import NLU
 from client_communication import VAClientHandler
 from module_communication import VAModuleHandler
 
@@ -25,6 +26,8 @@ class VirtualAssistant(object):
         args = parser.parse_args()
 
         self.loop = asyncio.get_event_loop()
+        
+        self.nlu = NLU()
         self.client_handler = VAClientHandler(self, args.port)
         self.module_handler = VAModuleHandler(self, args.port+1)
 

@@ -4,15 +4,11 @@ import asyncio
 import logging
 import copy
 
-from nlu import NLU
-
-
-nlu = NLU()
 
 class Context(object):
     ''' Saves the context of the conversation '''
-    def __init__(self):
-        super(Context, self).__init__()
+    def __init__(self, nlu):
+        self.nlu = nlu
         self.intents_list = []
 
     def is_empty(self):
@@ -38,7 +34,7 @@ class Context(object):
 
     def update_arguments(self,phrase):
         for intent in self.intents_list:
-            arguments_in_phrase = nlu.find_args_for_intent(intent['function'], phrase)
+            arguments_in_phrase = self.nlu.find_args_for_intent(intent['function'], phrase)
             if arguments_in_phrase is not None:
                 intent['arguments'].update({k:v for k,v in arguments_in_phrase.items() if v is not None})
 
@@ -62,9 +58,10 @@ class Conversation(object):
     def __init__(self, client):
         # Who the conversation is with
         self.client = client
+        self.nlu = self.client.protocol_handler.core.nlu
         self.my_turn = None
         self.ongoing = False
-        self.context = Context()
+        self.context = Context(self.nlu)
 
         self.start()
 
@@ -110,7 +107,7 @@ class Conversation(object):
         # Acknowledge
         # self.speak_to_client("You said '" + phrase + "'\n")
         # Understand intent of user
-        for intent in nlu.find_intents_in_phrase(phrase):
+        for intent in self.nlu.find_intents_in_phrase(phrase):
             # self.speak_to_client("Intent found to be {} with arguments {}\n".format(intent.name, intent.argument_dict))
             self.context.update(intent)
 

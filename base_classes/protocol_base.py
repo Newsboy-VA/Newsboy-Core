@@ -28,9 +28,36 @@ class ProtocolBase(asyncio.Protocol):
 
     def data_received(self, serial_data):
         ''' Callback when the socket gets data '''
-        data = json.loads(serial_data.decode('utf-8'))
-        logging.debug("{}: Received \"{}\"".format(self.name, data))
-        self.buffer.append(data)
+        string_data = serial_data.decode('utf-8')
+        packet_list = self.extract_packets(string_data)
+        for packet in packet_list:
+            data = json.loads(packet)
+            self.buffer.append(data)
+            logging.debug("{}: Received \"{}\"".format(self.name, data))
+
+    def extract_packets(self, string_data):
+        ''' Split the string data into the individual packets to avoid a
+        json.decoder.JSONDecodeError
+        '''
+        packet_list = []
+        bracket_count = dict.fromkeys(['[', '{'], 0)
+        curr_packet = ""
+        for char in string_data:
+            if char == '[':
+                bracket_count['['] += 1
+            elif char == ']':
+                bracket_count['['] -= 1
+            if char == '{':
+                bracket_count['{'] += 1
+            elif char == '}':
+                bracket_count['{'] -= 1
+            curr_packet += char
+            if list(bracket_count.values()) == [0]*len(bracket_count):
+                packet_list.append(curr_packet)
+                curr_packet = ""
+
+        return packet_list
+
 
     def data_available(self):
         ''' Returns whether the read buffer has data '''
