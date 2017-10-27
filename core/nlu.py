@@ -32,6 +32,7 @@ class NLU(object):
             if intent_matcher.is_intent_match(phrase):
                 arguments_in_phrase = intent_matcher.find_all_arguments(phrase)
                 intent = Intent({'function': intent_matcher['function'],
+                                 'module': intent_matcher['module'],
                                  'arguments': arguments_in_phrase})
 
                 matching_intents.append(intent)

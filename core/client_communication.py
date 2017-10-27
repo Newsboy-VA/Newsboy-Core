@@ -60,7 +60,7 @@ class VAClientHandlerProtocol(ServerProtocolBase):
                 intent = await conversation.converse()
 
             self.protocol_handler.core.module_handler.send_request(
-                self.name, 'datetime', intent)
+                self.name, intent['module'], intent)
             # end_conversation = True
 
             # Wait for module ack
