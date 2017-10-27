@@ -1,0 +1,16 @@
+{
+  "actions": [
+    {
+      "name": "play",
+      "synonyms": [],
+      "function": "play_music",
+      "arguments": ["genre"]
+  },
+  {
+    "name": "stop",
+    "synonyms": [],
+    "function": "stop_music",
+    "arguments": []
+  }
+  ]
+}

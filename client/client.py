@@ -81,9 +81,10 @@ class VAClient(object):
 
 class VAClientProtocol(ClientProtocolBase):
     def connection_made(self, transport):
-         # By default, the client name is a list of it's connection. That way
-         # it always has a unique identifier, and a list so it can be encoded.
-        self.name = list(transport.get_extra_info('sockname'))
+        # By default, the client name is a list of it's connection. That way
+        # it always has a unique identifier, and a list so it can be encoded.
+        if self.name == "":
+            self.name = list(transport.get_extra_info('sockname'))
         super().connection_made(transport)
 
     async def display(self, message, force_method=None):

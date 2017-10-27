@@ -39,7 +39,7 @@ class NLU(object):
         return matching_intents
 
     def find_args_for_intent(self, intent_function, phrase):
-        ''' Returns a list of arguments found in the phrase to the given intent '''
+        ''' Returns a dict of arguments found in the phrase to the given intent '''
         for intent_matcher in self.available_intents:
             if intent_matcher['function'] == intent_function:
                 return intent_matcher.find_all_arguments(phrase)
