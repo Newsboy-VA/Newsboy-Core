@@ -1,0 +1,15 @@
+{
+  "entities": [
+  {
+    "name": "genre",
+    "parameters": [
+      "jazz",
+      "christian",
+      "acoustic",
+      "programming",
+      "any",
+      "anything"
+      ]
+    }
+]
+}
