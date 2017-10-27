@@ -1,3 +1,24 @@
 {
-  "entities": []
+  "entities": [
+      {
+        "name": "greeting",
+        "parameters": [
+            "hi",
+            "hello",
+            "hey",
+            "@time_specific"
+        ]
+    },
+    {
+        "name": "farewell",
+        "parameters": [
+            "goodbye",
+            "bye",
+            "see you later",
+            "farewell",
+            "ta ta for now",
+            "I hope you come back soon"
+        ]
+    }
+  ]
 }
