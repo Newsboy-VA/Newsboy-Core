@@ -1,10 +1,14 @@
 {
   "actions": [
     {
-      "name": "greetings",
+      "name": "greeting",
       "synonyms": [
         "hello",
-        "hi"
+        "hi",
+        "hey",
+        "good morning",
+        "good afternoon",
+        "good evening"
       ],
       "function": "greeting",
       "arguments": []
@@ -13,7 +17,8 @@
       "name": "farewell",
       "synonyms": [
         "goodbye",
-        "bye"
+        "bye",
+        "good night"
       ],
       "function": "farewell",
       "arguments": []
