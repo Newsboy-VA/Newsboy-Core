@@ -3,6 +3,7 @@
 import argparse
 import subprocess
 import os
+import stat
 import time
 
 
@@ -87,6 +88,11 @@ def load_modules(args):
             module_main = os.path.join(module_dir, "main.py")
             module_name = os.path.split(module_dir)[-1]
             if os.path.isfile(module_main):
+                if not os.access(module_main, os.X_OK):
+                    # The main file isn't executable
+                    print("Making {} executable".format(module_main))
+                    curr_mode = os.stat(module_main).st_mode
+                    os.chmod(module_main, curr_mode | stat.S_IEXEC)
                 print("Running {} module".format(module_name))
                 # print([module_main, args.host, args.module_port])
                 processes.append(subprocess.Popen([
