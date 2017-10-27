@@ -120,7 +120,7 @@ def add_main_arguments(parser):
         )
     # NOTE: The following may be different if you are starting just a client.
     parser.add_argument(
-        '-I', '--input_type',
+        '-I', '--input-type',
         choices=['text', 'sphinx', 'google'], default=DEFAULT_CORE_INPUT,
         help="Set how you want to interact with the assistant",
         )
@@ -175,9 +175,9 @@ def add_client_arguments(subparsers):
         type=int, default=DEFAULT_CLIENT_PORT,
         help="Set the port of the client handler",
         )
-        # NOTE: The following may be different if you are also starting the core.
+    # NOTE: The following may be different if you are also starting the core.
     client_parser.add_argument(
-        '-I', '--input_type',
+        '-I', '--input-type',
         choices=['text', 'sphinx', 'google'], default=DEFAULT_CLIENT_INPUT,
         help="Set how you want to interact with the assistant",
         )
