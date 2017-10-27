@@ -39,7 +39,7 @@ class VAClient(object):
         self.input_type = args.input_type
         if self.input_type == 'text':
             self.io_handle = user_io.TextIO()
-        elif self.input_type == 'speech':
+        elif self.input_type == 'google':
             self.io_handle = user_io.SpeechIO()
 
         self.loop = asyncio.get_event_loop()
