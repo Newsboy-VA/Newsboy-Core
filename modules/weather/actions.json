@@ -5,8 +5,6 @@
       "synonyms": [],
       "function": "get_weather",
       "arguments": []
-    },
-      ]
     }
   ]
 }
