@@ -38,13 +38,13 @@ class MusicModule(VAModuleBase):
             genre = random.choice(list(self.music_sources))
             self.send_to_client('main', "I'm going to play some {} music for you.".format(genre))
             self.vlc_player.play(self.music_sources[genre])
-            # return "I'm going to play some {} music for you.".format(genre)
         else:
+            self.send_to_client('main', "Playing some {}".format(genre))
             self.vlc_player.play(self.music_sources[genre])
-            return "Playing some {}".format(genre)
 
     def stop_music(self):
         self.vlc_player.stop()
+        return "Music stopped"
 
 
 
