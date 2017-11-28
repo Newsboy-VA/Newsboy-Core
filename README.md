@@ -17,4 +17,33 @@ We have taken a very modular approach, so it is fairly easy to add new ways to c
 ## Easily configurable
 The name of this assistant (Newsboy) has not made it into the code anywhere, except as a default configuration. You can change the name, how you want to interact, what the voice is etc. There is support for multiple users, each with their own preferences. In the long-term, hopefully Newsboy will be able to use computer vision to detect the user.
 
-(Note that at this stage, he is not yet functional, these points are just what the block diagrams and program design will allow)
+**Note:** He is currently very early in development so is not yet functional,
+these points are just what the block diagrams and program design will allow.
+You may be able to type to Newsboy through the terminal, but it may be months
+before the first release.
+
+
+# Installation Instructions
+
+At this point, Newsboy only works on Linux (tested on Mint 18) with Python 3.5+
+due to the async keywords. May change in the future or be ported to other
+platforms, but that's low priority.
+
+    git clone git@github.com:Newsboy-VA/Newsboy-Core.git
+    cd Newsboy-Core
+    ./setup.bash
+
+This should install the dependencies, if not then raise an issue or submit a
+pull request.
+
+# Running Instructions
+
+In order to get anything visible to work, three things need to be running:
+
+1. The Newsboy Core (`core/core.py`)
+2. One or more modules (`modules/*/main.py`)
+3. One or more clients (your interface) (`client/client.py`)
+
+Rather than running these individually, it's best to use the launcher in the
+main directory, `virtual_assistant.py`. From this, you can launch individual
+parts, or all at once, `virtual_assistant.py -h` for help.
