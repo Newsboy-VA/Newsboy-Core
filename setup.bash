@@ -42,3 +42,5 @@ sudo -H pip3 install feedparser
 sudo -H pip3 install python_vlc
 sudo -H pip3 install youtube_dl
 sudo -H pip3 install pafy
+sudo -H pip3 install "psutil>=5.4.2"
+sudo -H pip3 install num2words

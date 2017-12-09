@@ -7,6 +7,7 @@ import logging
 import inspect
 import json
 import argparse
+import traceback
 
 from protocol_base import ClientProtocolBase
 from action_base import ActionBase
@@ -136,8 +137,12 @@ class Action(ActionBase):
 
     def __call__(self, **kwargs):
         ''' Perform the given function '''
-        self.assert_arguments(**kwargs)
-        return self.function_handle(**kwargs)
+        try:
+            self.assert_arguments(**kwargs)
+            return self.function_handle(**kwargs)
+        except:
+            logging.exception("Unable to run command")
+
 
     def assert_arguments(self, **kwargs):
         ''' Ensure the given parameters match their corresponding entities '''
