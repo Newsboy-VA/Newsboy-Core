@@ -18,21 +18,14 @@ from protocol_base import ClientProtocolBase
 class VAClient(object):
     ''' A client object which talks to the virtual assistant '''
     def __init__(self):
-        FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
-        logging.basicConfig(
-            filename='info.log',
-            level=logging.INFO,
-            format=FORMAT,
-            )
-
         parser = argparse.ArgumentParser(
             description='Start a client to connect to the Virtual Assistant.')
         parser.add_argument('--client-name', type=str, default="")
         parser.add_argument('--host', type=str, default='localhost')
         parser.add_argument('--port', type=int, default=55801)
         parser.add_argument('--input-type', type=str, default='text')
+        parser.add_argument('--log-level', type=str.upper, default='INFO')
         parser.add_argument('--continuous', default=False, action='store_true')
-
         args = parser.parse_args()
 
         self.name = args.client_name
@@ -41,6 +34,15 @@ class VAClient(object):
             self.io_handle = user_io.TextIO()
         elif self.input_type == 'google':
             self.io_handle = user_io.SpeechIO()
+
+        self.log_level = args.log_level.lower()
+
+        FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
+        logging.basicConfig(
+            filename='{}.log'.format(self.log_level.lower()),
+            level=getattr(logging, self.log_level.upper()),
+            format=FORMAT,
+            )
 
         self.loop = asyncio.get_event_loop()
         coro = self.loop.create_connection(lambda: VAClientProtocol(self),

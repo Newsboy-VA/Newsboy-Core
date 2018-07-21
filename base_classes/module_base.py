@@ -19,19 +19,22 @@ class VAModuleBase(object):
         self.path = os.path.dirname(inspect.getmodule(self).__file__)
         self.name = os.path.split(self.path)[-1]
 
-        FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
-        logging.basicConfig(
-            filename='info.log',
-            level=logging.INFO,
-            format=FORMAT,
-            )
-
         parser = argparse.ArgumentParser(
             description='Start a module for the virtual assistant to use.')
         parser.add_argument('--host', type=str, default='localhost')
         parser.add_argument('--port', type=int, default=55802)
+        parser.add_argument('--log-level', type=str.upper, default='INFO')
 
         args = parser.parse_args()
+
+        self.log_level = args.log_level.lower()
+
+        FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
+        logging.basicConfig(
+            filename='{}.log'.format(self.log_level.lower()),
+            level=getattr(logging, self.log_level.upper()),
+            format=FORMAT,
+            )
 
         self.available_actions = dict()
         self.update_available_actions()

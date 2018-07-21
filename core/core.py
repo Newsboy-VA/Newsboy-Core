@@ -13,20 +13,24 @@ from module_communication import VAModuleHandler
 class VirtualAssistant(object):
     '''  '''
     def __init__(self):
-        FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
-        logging.basicConfig(
-            filename='info.log',
-            level=logging.INFO,
-            format=FORMAT,
-            )
 
         parser = argparse.ArgumentParser(
             description='Start the Virtual Assistant Core.')
         parser.add_argument('--port', type=int, default=55801)
+        parser.add_argument('--log-level', type=str.upper, default='INFO')
         args = parser.parse_args()
 
+        self.log_level = args.log_level.lower()
+
+        FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
+        logging.basicConfig(
+            filename='{}.log'.format(self.log_level.lower()),
+            level=getattr(logging, self.log_level.upper()),
+            format=FORMAT,
+            )
+
         self.loop = asyncio.get_event_loop()
-        
+
         self.nlu = NLU()
         self.client_handler = VAClientHandler(self, args.port)
         self.module_handler = VAModuleHandler(self, args.port+1)

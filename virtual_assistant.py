@@ -2,6 +2,7 @@
 
 import argparse
 import subprocess
+import logging
 import os
 import stat
 import time
@@ -11,6 +12,7 @@ DEFAULT_CLIENT_PORT = 55801
 DEFAULT_MODULE_PORT = 55802
 DEFAULT_CORE_INPUT = 'text'
 DEFAULT_CLIENT_INPUT = 'text'
+DEFAULT_LOGGING_LEVEL = 'INFO'
 
 
 def main():
@@ -52,7 +54,8 @@ def load_core(args):
     processes = []
     processes.append(subprocess.Popen([
         './core/core.py',
-        '--port='+str(args.client_port)
+        '--port='+str(args.client_port),
+        '--log-level='+args.log_level,
         ]))
 
     return processes
@@ -68,6 +71,7 @@ def load_client(args):
         '--host='+args.host,
         '--port='+str(args.client_port),
         '--input-type='+args.input_type,
+        '--log-level='+args.log_level,
     ]
     if args.continuous:
         client_args.append('--continuous')
@@ -98,7 +102,8 @@ def load_modules(args):
                 processes.append(subprocess.Popen([
                     module_main,
                     '--host='+args.host,
-                    '--port='+str(args.module_port)
+                    '--port='+str(args.module_port),
+                    '--log-level='+args.log_level,
                     ]))
             else:
                 print("Unable to run {} module".format(module_name))
@@ -114,7 +119,7 @@ def add_main_arguments(parser):
         help="Set the port of the client handler",
         )
     parser.add_argument(
-        '-P', '--module-port',
+        '-M', '--module-port',
         type=int, default=DEFAULT_MODULE_PORT,
         help="Set the port of the module handler",
         )
@@ -129,7 +134,6 @@ def add_main_arguments(parser):
         host='localhost',
         client_name="main",
         continuous=True,
-        all_modules=True,
         )
 
 
@@ -149,6 +153,12 @@ def add_core_arguments(subparsers):
         '-M', '--module-port',
         type=int, default=DEFAULT_MODULE_PORT,
         help="Set the port of the module handler",
+        )
+    core_parser.add_argument(
+        '--log-level',
+        type=str.upper,
+        choices=logging._levelToName.values(), default=DEFAULT_LOGGING_LEVEL,
+        help="Set which logging level to save",
         )
     core_parser.set_defaults(func=load_core)
 
@@ -181,6 +191,12 @@ def add_client_arguments(subparsers):
         choices=['text', 'sphinx', 'google'], default=DEFAULT_CLIENT_INPUT,
         help="Set how you want to interact with the assistant",
         )
+    client_parser.add_argument(
+        '--log-level',
+        type=str.upper,
+        choices=logging._levelToName.values(), default=DEFAULT_LOGGING_LEVEL,
+        help="Set which logging level to save",
+        )
     # NOTE: The following default is 'True' as opposed to the client.py default
     #       which is 'False'.
     client_parser.add_argument(
@@ -204,11 +220,11 @@ def add_modules_arguments(subparsers):
         description="Start one or more modules by themselves",
         # help="",
         )
-    module_parser.add_argument(
-        '-A', '--all_modules',
-        default=False, action='store_true',
-        help="Start all the modules",
-        )
+    # module_parser.add_argument(
+    #     '-A', '--all_modules',
+    #     default=False, action='store_true',
+    #     help="Start all the modules",
+    #     )
     module_parser.add_argument(
         '-H', '--host',
         type=str, default='localhost',
@@ -219,10 +235,16 @@ def add_modules_arguments(subparsers):
         type=int, default=DEFAULT_MODULE_PORT,
         help="Set the port of the module handler",
         )
+    # module_parser.add_argument(
+    #     'module',
+    #     type=str, nargs='*',
+    #     help="The modules you want to start",
+    #     )
     module_parser.add_argument(
-        'module',
-        type=str, nargs='*',
-        help="The modules you want to start",
+        '--log-level',
+        type=str.upper,
+        choices=logging._levelToName.values(), default=DEFAULT_LOGGING_LEVEL,
+        help="Set which logging level to save",
         )
     module_parser.set_defaults(func=load_modules)
 
