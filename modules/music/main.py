@@ -17,9 +17,8 @@ from module_base import VAModuleBase
 
 class MusicModule(VAModuleBase):
     def __init__(self):
-        module_path = os.path.dirname(inspect.getfile(inspect.currentframe()))
+        super().__init__()
 
-        super().__init__(module_path)
         self.vlc_player = VLC_Player()
         self.music_sources = {
             'jazz'          : "https://www.youtube.com/watch?v=neV3EPgvZ3g",
@@ -34,6 +33,7 @@ class MusicModule(VAModuleBase):
         pass
 
     def play_music(self, genre):
+        return "No."
         if genre in ['anything', 'any']:
             genre = random.choice(list(self.music_sources))
             self.send_to_client('main', "I'm going to play some {} music for you.".format(genre))

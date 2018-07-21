@@ -15,14 +15,6 @@ from module_base import VAModuleBase
 
 
 class GreetingsModule(VAModuleBase):
-    def __init__(self):
-        module_path = os.path.dirname(inspect.getfile(inspect.currentframe()))
-
-        super().__init__(module_path)
-
-        entities_file = open(os.path.join(module_path, "entities.json"))
-        self.entities_json = json.load(entities_file)['entities']
-        entities_file.close()
 
     def background_tasks(self):
         ''' Perform all the background tasks that need to be done '''
@@ -79,9 +71,6 @@ class GreetingsModule(VAModuleBase):
             else:
                 response = "I've only been up for {} so I'm wide awake.".format(str(uptime).split('.', 2)[0])
         return response
-
-
-
 
 
 if __name__ == "__main__":

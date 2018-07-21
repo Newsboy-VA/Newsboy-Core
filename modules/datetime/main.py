@@ -13,11 +13,7 @@ from module_base import VAModuleBase
 
 
 class VAModule(VAModuleBase):
-    def __init__(self):
-        module_path = os.path.dirname(inspect.getfile(inspect.currentframe()))
-
-        super().__init__(module_path)
-
+    
     def background_tasks(self):
         ''' Perform all the background tasks that need to be done '''
         pass

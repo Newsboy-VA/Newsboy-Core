@@ -15,8 +15,8 @@ from action_base import ActionBase
 
 class VAModuleBase(object):
     ''' A module which talks to the virtual assistant '''
-    def __init__(self, module_path):
-        self.path = module_path
+    def __init__(self):
+        self.path = os.path.dirname(inspect.getmodule(self).__file__)
         self.name = os.path.split(self.path)[-1]
 
         FORMAT = '%(asctime)-15s %(levelname)-5s (PID %(process)d) %(message)s'
@@ -73,19 +73,19 @@ class VAModuleBase(object):
         ''' Register all actions from the json file '''
 
         actions_file = open(os.path.join(self.path, "actions.json"))
-        actions_json = json.load(actions_file)['actions']
+        self.actions_json = json.load(actions_file)['actions']
         actions_file.close()
         entities_file = open(os.path.join(self.path, "entities.json"))
-        entities_json = json.load(entities_file)['entities']
+        self.entities_json = json.load(entities_file)['entities']
         entities_file.close()
 
-        for action_dict in actions_json:
+        for action_dict in self.actions_json:
             function_name = action_dict['function']
             function_handle = self.get_function_handle(function_name)
 
             action = Action(action_dict)
             action.set_function_handle(function_handle)
-            action.find_argument_parameters(entities_json)
+            action.find_argument_parameters(self.entities_json)
             self.available_actions[function_name] = action
 
     def get_function_handle(self, function_name):

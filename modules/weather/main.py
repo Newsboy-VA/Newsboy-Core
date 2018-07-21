@@ -14,11 +14,6 @@ from module_base import VAModuleBase
 
 
 class WeatherModule(VAModuleBase):
-    def __init__(self):
-        module_path = os.path.dirname(inspect.getfile(inspect.currentframe()))
-
-        super().__init__(module_path)
-
 
     def background_tasks(self):
         ''' Perform all the background tasks that need to be done '''
@@ -26,7 +21,6 @@ class WeatherModule(VAModuleBase):
 
     def get_weather(self):
         # look into using metservice data: https://github.com/arfar/metservice-api-py
-        
         weather_data = feedparser.parse("http://www.rssweather.com/wx/nz/christchurch/rss.php")
         weather_summary = weather_data['entries'][0]['summary_detail']['value']
         return weather_summary
