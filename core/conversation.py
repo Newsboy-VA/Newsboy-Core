@@ -122,7 +122,7 @@ class Conversation(object):
                 self.ongoing = False
                 return intent
             else:
-                return await self.converse("What " + [entity for entity,value in self.context.intents_list[0]['arguments'].items() if value is None ][0] + " ? ")
+                return await self.converse("What " + [entity for entity,value in self.context.intents_list[0]['arguments'].items() if value is None ][0] + "? ")
 
 
 

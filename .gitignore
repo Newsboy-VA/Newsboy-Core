@@ -1,3 +1,11 @@
 models/
 *__pycache__/
 *.log
+
+# Virtual Env
+bin/
+etc/
+include/
+lib/
+share/
+pip-selfcheck.json

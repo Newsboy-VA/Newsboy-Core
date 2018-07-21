@@ -11,9 +11,9 @@ sudo apt-get install python3-dev python3-pip
 sudo -H pip3 install --upgrade pip
 
 # Speech-to-text (speech recognition)
-sudo -H pip3 install pocketsphinx
-sudo -H pip3 install pyaudio
-sudo -H pip3 install SpeechRecognition
+sudo -H pip3 install "pocketsphinx<=0.1.3"
+sudo -H pip3 install "pyaudio>=0.2.11"
+sudo -H pip3 install "SpeechRecognition>=3.7.1"
 
 mkdir ./models ./models/en-us
 cd ./models/en-us
@@ -34,13 +34,3 @@ cd ../../
 # Text-to-speech
 sudo apt-get install espeak
 sudo apt-get install mbrola-en1  # or your choice. Not required
-
-# Info module
-sudo -H pip3 install feedparser
-
-# Music module
-sudo -H pip3 install python_vlc
-sudo -H pip3 install youtube_dl
-sudo -H pip3 install pafy
-sudo -H pip3 install "psutil>=5.4.2"
-sudo -H pip3 install num2words
