@@ -61,6 +61,10 @@ class VAClient(object):
             self.loop.run_until_complete(self.loop.shutdown_asyncgens())
         self.loop.close()
         if self.input_type == 'text':
+
+            # self.stdscr.nodelay(True)
+            curses.nocbreak()
+            self.io_handle.stdscr.keypad(False)
             curses.echo()
             curses.endwin()
 
